@@ -1,0 +1,145 @@
+# Technical Requirements Document (TRD) — HashWatch
+
+---
+
+## 1. System Architecture Overview
+
+HashWatch adopts a modular layered architecture built on the Spring Boot 3 ecosystem running on Java 17 LTS. The system is partitioned into:
+1. **Core Cryptographic Engine:** Hashing (`SHA-256`) and Digital Signatures (`Ed25519`).
+2. **Persistence & Data Layer:** Spring Data JPA with Hibernate, targeting PostgreSQL 16 (with H2 in-memory profile for lightweight local runs).
+3. **Orchestration / Scheduling Layer:** Quartz Job Scheduler for reliable, configurable periodic execution.
+4. **Presentation & API Layer:** Spring MVC REST controllers accompanied by server-rendered Thymeleaf HTML5 views.
+5. **Offline Analysis & Benchmarking Layer:** Python 3 analysis suite consuming database telemetry to benchmark throughput and latency.
+
+```mermaid
+flowchart TB
+    subgraph Presentation ["Presentation & API Layer"]
+        WebUI[Thymeleaf Web Dashboard]
+        REST[REST API Controllers]
+    end
+
+    subgraph ServiceLayer ["Business Logic & Orchestration"]
+        Scheduler[Quartz Scheduler / MonitoringJob]
+        ComparisonSvc[ComparisonService]
+        HashSvc[HashingService]
+        SignSvc[SigningService]
+    end
+
+    subgraph DataLayer ["Data & Persistence Layer"]
+        Repo[Spring Data JPA Repositories]
+        DB[(PostgreSQL 16 / H2)]
+    end
+
+    subgraph FileSystem ["Operating System Storage"]
+        WatchedFiles[Monitored Files on Disk]
+        KeyStore[keys/ - Ed25519 Private & Public Keys]
+    end
+
+    WebUI --> REST
+    REST --> ComparisonSvc
+    Scheduler --> ComparisonSvc
+    ComparisonSvc --> HashSvc
+    ComparisonSvc --> SignSvc
+    ComparisonSvc --> Repo
+    HashSvc --> WatchedFiles
+    SignSvc --> KeyStore
+    Repo --> DB
+```
+
+---
+
+## 2. Technology Stack & Rationale
+
+| Layer | Technology | Version | Rationale |
+| :--- | :--- | :--- | :--- |
+| **Language** | Java | 17 (LTS) | Strong typing, LTS stability, native JCA Ed25519 support (JEP 339), modern heap memory management. |
+| **Framework** | Spring Boot | 3.3.4 | Industry-standard dependency injection, autoconfiguration, embedded Tomcat, native metrics. |
+| **Database** | PostgreSQL | 16-alpine | Enterprise ACID compliance, robust indexing on hashes and timestamps, production standard. |
+| **Fallback DB** | H2 Database | 2.x | Zero-setup in-memory database for rapid onboarding and unit testing. |
+| **Scheduler** | Quartz Scheduler | 2.3.x | Enterprise job clustering support, durable job details, flexible cron and simple trigger intervals. |
+| **Cryptography** | Java JCA + BouncyCastle | 1.78.1 | RFC 8032 Ed25519 compliant, PKCS#8 and X.509 standard key encodings. |
+| **Frontend** | Thymeleaf + CSS/JS | 3.x | Zero-node build step, server-side rendered, lightweight, high performance. |
+| **Analysis** | Python + Matplotlib + NumPy | 3.12+ | Rich statistical packages for CDF/PDF latency plotting and research comparison. |
+
+---
+
+## 3. Cryptographic Implementation Details
+
+### 3.1. SHA-256 Streaming
+Rather than loading an entire file into memory (which causes `OutOfMemoryError` on large files), HashWatch processes files in chunks:
+```java
+MessageDigest digest = MessageDigest.getInstance("SHA-256");
+try (FileInputStream fis = new FileInputStream(file)) {
+    byte[] buffer = new byte[65536]; // 64 KB buffer
+    int bytesRead;
+    while ((bytesRead = fis.read(buffer)) != -1) {
+        digest.update(buffer, 0, bytesRead);
+    }
+}
+String hexDigest = HexFormat.of().formatHex(digest.digest());
+```
+- **Time Complexity:** $\mathcal{O}(N)$ where $N$ is file size.
+- **Space Complexity:** $\mathcal{O}(1)$ bounded to 64 KB heap allocation.
+
+### 3.2. Ed25519 Digital Signatures (Edwards-curve Digital Signature Algorithm)
+- **Curve:** Curve25519 with Twisted Edwards model ($ -x^2 + y^2 = 1 - \frac{121665}{121666} x^2 y^2 $).
+- **Key Sizes:** 32-byte public key, 32-byte private key (encoded with standard PKCS#8 / X.509 format).
+- **Signature Size:** Fixed 64 bytes (Base64 encoded string $\approx$ 88 characters).
+- **Security:** 128-bit security level against collision and discrete logarithm attacks; immune to timing side-channel attacks.
+- **Storage:** Key pairs are initialized into `keys/ed25519_private.key` and `keys/ed25519_public.pub`. The private key is excluded in `.gitignore` and never transmitted across the network.
+
+---
+
+## 4. Database Design & Persistence
+
+The relational schema maintains strict foreign key constraints and transactional integrity.
+
+### Tables
+1. **`watched_files`**: Registry of monitored paths, status, size, modification timestamps.
+2. **`baseline_entries`**: Immutable snapshots containing the SHA-256 hash, Ed25519 signature, and active baseline indicator.
+3. **`alert_events`**: Audit trail of integrity violations, severity levels, mismatched hashes, and triage flags.
+
+*(See [`docs/ERD.md`](ERD.md) for full SQL definitions and Mermaid entity schemas).*
+
+---
+
+## 5. REST API Specifications
+
+### Base Path: `/api`
+
+#### 1. Watched Files
+- **`GET /api/files`**
+  - Response: `200 OK` — List of `WatchedFile` objects.
+- **`POST /api/files`**
+  - Request Body: `{"filePath": "/path/to/file"}`
+  - Response: `200 OK` — Created `WatchedFile` with initial baseline established.
+  - Error: `400 Bad Request` if file path is missing or non-existent on disk.
+- **`DELETE /api/files/{id}`**
+  - Response: `200 OK` — Deactivates file from active monitoring.
+
+#### 2. Baselines
+- **`GET /api/baselines`**
+  - Response: `200 OK` — List of all active `BaselineEntry` records.
+- **`GET /api/baselines/public-key`**
+  - Response: `200 OK` — `{"algorithm": "Ed25519", "publicKey": "<base64>"}`
+- **`POST /api/baselines/generate/{fileId}`**
+  - Response: `200 OK` — Recomputes SHA-256, resigns with Ed25519, updates active baseline.
+- **`POST /api/baselines/generate-all`**
+  - Response: `200 OK` — Re-baselines all active files.
+
+#### 3. Alerts & Verification
+- **`GET /api/alerts`**
+  - Response: `200 OK` — List of unresolved security alerts.
+- **`POST /api/alerts/{id}/resolve`**
+  - Response: `200 OK` — Marks alert as resolved (`is_resolved = true`).
+- **`POST /api/alerts/scan-now`**
+  - Response: `200 OK` — Triggers an immediate out-of-band verification scan.
+
+---
+
+## 6. Offline Statistical & Benchmarking Suite
+
+Located in `python-analysis/`:
+- **`overhead_benchmark.py`**: Benchmarks hashing speed across file sizes (1MB to 100MB) and Ed25519 signing/verifying speeds against academic benchmarks.
+- **`latency_analysis.py`**: Calculates mean, median, 95th percentile detection latency over periodic scan distributions.
+- **`charts/`**: Automatically outputs publication-ready figures for project reports and presentation slides.

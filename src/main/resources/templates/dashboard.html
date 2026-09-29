@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HashWatch | File Integrity Monitor</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="navbar">
+        <div class="brand">
+            <span class="logo-icon">🛡️</span>
+            <h1>HashWatch</h1>
+            <span class="badge">Ed25519 Signed</span>
+        </div>
+        <nav class="nav-links">
+            <a href="/" class="active">Dashboard</a>
+            <a href="/alerts">Alerts <span class="counter" th:text="${alertCount}">0</span></a>
+            <button class="btn btn-primary" onclick="triggerScan()">⚡ Run Integrity Scan</button>
+        </nav>
+    </header>
+
+    <main class="container">
+        <!-- Metric Cards -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <h3>Watched Files</h3>
+                <p class="metric-value" th:text="${activeCount}">0</p>
+                <span class="metric-sub">Monitored periodically</span>
+            </div>
+            <div class="metric-card">
+                <h3>Active Baselines</h3>
+                <p class="metric-value" th:text="${#lists.size(baselines)}">0</p>
+                <span class="metric-sub">SHA-256 + Ed25519</span>
+            </div>
+            <div class="metric-card" th:classappend="${alertCount > 0} ? 'card-danger' : 'card-success'">
+                <h3>Unresolved Alerts</h3>
+                <p class="metric-value" th:text="${alertCount}">0</p>
+                <span class="metric-sub" th:text="${alertCount > 0} ? 'Tampering detected!' : 'All signatures valid'">Status</span>
+            </div>
+        </section>
+
+        <!-- Register New File Form -->
+        <section class="card">
+            <h2>Add File to Watchlist</h2>
+            <form id="addFileForm" onsubmit="registerFile(event)" class="form-row">
+                <input type="text" id="filePathInput" placeholder="Enter absolute file path (e.g. /etc/hosts or C:\system.conf)" required>
+                <button type="submit" class="btn btn-secondary">+ Register & Baseline</button>
+            </form>
+        </section>
+
+        <!-- Watched Files Table -->
+        <section class="card">
+            <div class="card-header">
+                <h2>Watched Files & Status</h2>
+                <button class="btn btn-sm btn-outline" onclick="rebaselineAll()">Rebaseline All</button>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File Path</th>
+                            <th>Status</th>
+                            <th>Size (Bytes)</th>
+                            <th>Last Checked</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(files)}">
+                            <td colspan="5" class="empty-state">No files registered yet. Add a file path above to begin monitoring.</td>
+                        </tr>
+                        <tr th:each="file : ${files}">
+                            <td class="font-mono text-break" th:text="${file.filePath}"></td>
+                            <td>
+                                <span class="status-pill"
+                                      th:classappend="${file.status == 'VERIFIED' ? 'status-ok' : (file.status == 'TAMPERED' ? 'status-danger' : 'status-warn')}"
+                                      th:text="${file.status}">VERIFIED</span>
+                            </td>
+                            <td th:text="${file.fileSize}">0</td>
+                            <td th:text="${file.lastModified != null ? #temporals.format(file.lastModified, 'yyyy-MM-dd HH:mm:ss') : 'N/A'}"></td>
+                            <td>
+                                <button class="btn btn-sm" th:onclick="'rebaselineSingle(' + ${file.id} + ')'">Rebaseline</button>
+                                <button class="btn btn-sm btn-danger-outline" th:onclick="'removeFile(' + ${file.id} + ')'">Remove</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script th:src="@{/js/app.js}"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+name: HashWatch CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Build and Test with Maven
+      run: mvn clean test -Dspring.profiles.active=h2
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Run Python Benchmark Scripts
+      run: |
+        cd python-analysis
+        pip install -r requirements.txt
+        python overhead_benchmark.py
+        python latency_analysis.py

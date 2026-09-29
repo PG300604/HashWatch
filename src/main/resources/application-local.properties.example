@@ -1,0 +1,10 @@
+# ==============================================================================
+# HashWatch - Local Profile Template
+# Copy this file to 'application-local.properties' (which is gitignored)
+# and adjust properties to match your local setup.
+# ==============================================================================
+# spring.profiles.active=local
+# spring.datasource.url=jdbc:postgresql://localhost:5432/hashwatch_db
+# spring.datasource.username=your_user
+# spring.datasource.password=your_password
+# hashwatch.monitor.scan-interval-seconds=10

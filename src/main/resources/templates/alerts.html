@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HashWatch | Security Alerts</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="navbar">
+        <div class="brand">
+            <span class="logo-icon">🛡️</span>
+            <h1>HashWatch</h1>
+            <span class="badge">Security Center</span>
+        </div>
+        <nav class="nav-links">
+            <a href="/">Dashboard</a>
+            <a href="/alerts" class="active">Alerts <span class="counter" th:text="${alertCount}">0</span></a>
+            <button class="btn btn-primary" onclick="triggerScan()">⚡ Run Integrity Scan</button>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="card">
+            <div class="card-header">
+                <h2>Integrity Event & Alert Log</h2>
+                <button class="btn btn-sm btn-outline" onclick="location.reload()">Refresh</button>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Severity</th>
+                            <th>Event Type</th>
+                            <th>File Path</th>
+                            <th>Expected Hash</th>
+                            <th>Actual Hash</th>
+                            <th>Timestamp</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(alerts)}">
+                            <td colspan="7" class="empty-state">No alerts recorded. All files are intact.</td>
+                        </tr>
+                        <tr th:each="alert : ${alerts}" th:classappend="${!alert.resolved ? 'row-unresolved' : 'row-resolved'}">
+                            <td>
+                                <span class="severity-pill"
+                                      th:classappend="${alert.severity == 'CRITICAL' ? 'severity-critical' : (alert.severity == 'HIGH' ? 'severity-high' : 'severity-low')}"
+                                      th:text="${alert.severity}">HIGH</span>
+                            </td>
+                            <td class="font-bold" th:text="${alert.eventType}">MISMATCH</td>
+                            <td class="font-mono text-break" th:text="${alert.filePath}"></td>
+                            <td class="font-mono hash-cell" th:text="${alert.expectedHash != null ? alert.expectedHash : 'N/A'}"></td>
+                            <td class="font-mono hash-cell" th:text="${alert.actualHash != null ? alert.actualHash : 'N/A'}"></td>
+                            <td th:text="${alert.detectedAt != null ? #temporals.format(alert.detectedAt, 'yyyy-MM-dd HH:mm:ss') : 'N/A'}"></td>
+                            <td>
+                                <button th:if="${!alert.resolved}"
+                                        class="btn btn-sm btn-secondary"
+                                        th:onclick="'resolveAlert(' + ${alert.id} + ')'">Resolve</button>
+                                <span th:if="${alert.resolved}" class="text-muted">Resolved</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script th:src="@{/js/app.js}"></script>
+</body>
+</html>
