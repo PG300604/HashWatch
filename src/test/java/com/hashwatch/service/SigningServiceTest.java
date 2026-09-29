@@ -1,6 +1,7 @@
 package com.hashwatch.service;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -9,6 +10,13 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * =============================================================================
+ * DOMAIN: Cryptology
+ * ASSIGNED TO: Riya / Priyanshu (Sprint 1)
+ * Remove @Disabled once SigningService is implemented in Sprint 1.
+ * =============================================================================
+ */
 class SigningServiceTest {
 
     private SigningService signingService;
@@ -17,11 +25,12 @@ class SigningServiceTest {
     void setUp(@TempDir Path tempDir) throws Exception {
         signingService = new SigningService();
         ReflectionTestUtils.setField(signingService, "keyDirectoryPath", tempDir.toString());
-        signingService.ensureKeysLoaded();
     }
 
     @Test
+    @Disabled("Pending Sprint 1 implementation by Riya / Priyanshu")
     void testSignAndVerify() throws Exception {
+        signingService.ensureKeysLoaded();
         String testHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
         String signature = signingService.sign(testHash);
 
@@ -33,7 +42,9 @@ class SigningServiceTest {
     }
 
     @Test
+    @Disabled("Pending Sprint 1 implementation by Riya / Priyanshu")
     void testTamperedDataFailsVerification() throws Exception {
+        signingService.ensureKeysLoaded();
         String originalHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
         String signature = signingService.sign(originalHash);
 

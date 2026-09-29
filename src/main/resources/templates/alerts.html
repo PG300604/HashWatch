@@ -10,6 +10,14 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!--
+    =============================================================================
+    DOMAIN: Frontend
+    ASSIGNED TO: Riya (Sprint 4)
+    FOLDER / TARGET: src/main/resources/templates/alerts.html
+    DOC TO UPDATE: docs/PRD.md (Section 4 FR5)
+    =============================================================================
+    -->
     <header class="navbar">
         <div class="brand">
             <span class="logo-icon">🛡️</span>
@@ -43,6 +51,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Alert event loop -->
                         <tr th:if="${#lists.isEmpty(alerts)}">
                             <td colspan="7" class="empty-state">No alerts recorded. All files are intact.</td>
                         </tr>

@@ -1,6 +1,7 @@
 package com.hashwatch.service;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -11,6 +12,13 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * =============================================================================
+ * DOMAIN: Cryptology
+ * ASSIGNED TO: Samarjeet / Priyanshu (Sprint 1)
+ * Remove @Disabled once HashingService is implemented in Sprint 1.
+ * =============================================================================
+ */
 class HashingServiceTest {
 
     private HashingService hashingService;
@@ -21,6 +29,7 @@ class HashingServiceTest {
     }
 
     @Test
+    @Disabled("Pending Sprint 1 implementation by Samarjeet / Priyanshu")
     void testHashStringKnownVector() {
         // SHA-256 of empty string is e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
         String hash = hashingService.hashString("");
@@ -28,6 +37,7 @@ class HashingServiceTest {
     }
 
     @Test
+    @Disabled("Pending Sprint 1 implementation by Samarjeet / Priyanshu")
     void testHashFileMatchesExpected(@TempDir Path tempDir) throws IOException {
         Path testFile = tempDir.resolve("sample.txt");
         Files.writeString(testFile, "Hello HashWatch File Integrity Monitoring");
@@ -38,6 +48,7 @@ class HashingServiceTest {
     }
 
     @Test
+    @Disabled("Pending Sprint 1 implementation by Samarjeet / Priyanshu")
     void testFileModificationChangesHash(@TempDir Path tempDir) throws IOException {
         Path testFile = tempDir.resolve("sample.txt");
         Files.writeString(testFile, "Original Content");

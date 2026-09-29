@@ -1,6 +1,5 @@
 package com.hashwatch.service;
 
-import com.hashwatch.entity.AlertEvent;
 import com.hashwatch.entity.BaselineEntry;
 import com.hashwatch.entity.WatchedFile;
 import com.hashwatch.repository.AlertEventRepository;
@@ -9,15 +8,29 @@ import com.hashwatch.repository.WatchedFileRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
+/**
+ * =============================================================================
+ * DOMAIN: Backend
+ * ASSIGNED TO: Priyanshu / Samarjeet (Sprint 2)
+ * FOLDER / TARGET: src/main/java/com/hashwatch/service/ComparisonService.java
+ * DOC TO UPDATE: docs/DFD.md (Process 1.0 & Process 2.0)
+ * =============================================================================
+ *
+ * Task Description:
+ * Core verification engine that compares disk files against cryptographically
+ * signed baselines and updates file status / logs alerts upon mismatch or tampering.
+ *
+ * Acceptance Criteria:
+ * 1. establishBaseline(file): Computes SHA-256 via HashingService, signs with SigningService,
+ *    and saves BaselineEntry to database.
+ * 2. verifyFile(file): Verifies baseline signature first (detects DB tampering), then hashes
+ *    current file and sets status (VERIFIED, TAMPERED, MISSING).
+ * 3. Any violation generates an AlertEvent record.
+ */
 @Service
 public class ComparisonService {
 
@@ -44,113 +57,37 @@ public class ComparisonService {
     /**
      * Creates or updates a baseline for a given watched file.
      */
-    @Transactional
     public BaselineEntry establishBaseline(WatchedFile watchedFile) throws IOException, GeneralSecurityException {
-        File file = new File(watchedFile.getFilePath());
-        if (!file.exists()) {
-            throw new IllegalArgumentException("Cannot baseline non-existent file: " + watchedFile.getFilePath());
-        }
-
-        String hash = hashingService.hashFile(file);
-        String signature = signingService.sign(hash);
-
-        // Retire previous baseline entries
-        Optional<BaselineEntry> existing = baselineEntryRepository.findByWatchedFileAndCurrentTrue(watchedFile);
-        existing.ifPresent(b -> {
-            b.setCurrent(false);
-            baselineEntryRepository.save(b);
-        });
-
-        BaselineEntry baselineEntry = new BaselineEntry(
-                watchedFile,
-                hash,
-                signature,
-                "default-ed25519-key"
-        );
-        baselineEntryRepository.save(baselineEntry);
-
-        watchedFile.setStatus("VERIFIED");
-        watchedFile.setFileSize(file.length());
-        watchedFile.setLastModified(LocalDateTime.now());
-        watchedFileRepository.save(watchedFile);
-
-        log.info("Established cryptographic baseline for file: {} (SHA-256: {})", watchedFile.getFilePath(), hash);
-        return baselineEntry;
+        // TODO [Sprint 2 - Backend]: Assigned to Priyanshu / Samarjeet
+        // 1. Read file from watchedFile.getFilePath()
+        // 2. Call hashingService.hashFile(file)
+        // 3. Call signingService.sign(hash)
+        // 4. Retire previous baseline (setCurrent(false)) and insert new BaselineEntry
+        // 5. Update watchedFile status to 'VERIFIED'
+        throw new UnsupportedOperationException("TODO: Implement establishBaseline() in Sprint 2");
     }
 
     /**
      * Scans and verifies all active watched files.
      */
-    @Transactional
     public void runVerificationScan() {
-        List<WatchedFile> activeFiles = watchedFileRepository.findByActiveTrue();
-        for (WatchedFile fileEntity : activeFiles) {
-            verifyFile(fileEntity);
-        }
+        // TODO [Sprint 2 - Backend]: Assigned to Priyanshu / Samarjeet
+        // 1. Query watchedFileRepository.findByActiveTrue()
+        // 2. Iterate each file and call verifyFile(file)
+        log.info("Integrity verification scan triggered (To be implemented in Sprint 2)");
     }
 
     /**
-     * Verifies single file against baseline and logs alerts if tampered or missing.
+     * Verifies a single file against its active cryptographic baseline.
      */
-    @Transactional
     public void verifyFile(WatchedFile fileEntity) {
-        File diskFile = new File(fileEntity.getFilePath());
-        Optional<BaselineEntry> baselineOpt = baselineEntryRepository.findByWatchedFileAndCurrentTrue(fileEntity);
-
-        if (baselineOpt.isEmpty()) {
-            log.warn("No active baseline found for file: {}", fileEntity.getFilePath());
-            fileEntity.setStatus("UNTRACKED");
-            watchedFileRepository.save(fileEntity);
-            return;
-        }
-
-        BaselineEntry baseline = baselineOpt.get();
-
-        if (!diskFile.exists()) {
-            fileEntity.setStatus("MISSING");
-            watchedFileRepository.save(fileEntity);
-            createAlert(fileEntity, "MISSING_FILE", "HIGH", baseline.getSha256Hash(), null,
-                    "Watched file was removed or missing from disk: " + fileEntity.getFilePath());
-            return;
-        }
-
-        try {
-            // Step 1: Verify cryptographic signature of the baseline entry itself
-            boolean sigValid = signingService.verify(baseline.getSha256Hash(), baseline.getSignature());
-            if (!sigValid) {
-                fileEntity.setStatus("SIGNATURE_INVALID");
-                watchedFileRepository.save(fileEntity);
-                createAlert(fileEntity, "SIGNATURE_INVALID", "CRITICAL", baseline.getSha256Hash(), null,
-                        "Baseline cryptographic signature verification failed! Baseline may have been tampered with.");
-                return;
-            }
-
-            // Step 2: Hash current file and compare
-            String currentHash = hashingService.hashFile(diskFile);
-            if (currentHash.equalsIgnoreCase(baseline.getSha256Hash())) {
-                fileEntity.setStatus("VERIFIED");
-                fileEntity.setFileSize(diskFile.length());
-                fileEntity.setLastModified(LocalDateTime.now());
-                watchedFileRepository.save(fileEntity);
-            } else {
-                fileEntity.setStatus("TAMPERED");
-                fileEntity.setFileSize(diskFile.length());
-                fileEntity.setLastModified(LocalDateTime.now());
-                watchedFileRepository.save(fileEntity);
-
-                createAlert(fileEntity, "UNAUTHORIZED_MODIFICATION", "CRITICAL",
-                        baseline.getSha256Hash(), currentHash,
-                        "File content altered! SHA-256 hash mismatch detected for " + fileEntity.getFilePath());
-            }
-        } catch (Exception e) {
-            log.error("Error during verification scan of {}: {}", fileEntity.getFilePath(), e.getMessage());
-        }
-    }
-
-    private void createAlert(WatchedFile fileEntity, String type, String severity,
-                             String expectedHash, String actualHash, String message) {
-        AlertEvent alert = new AlertEvent(fileEntity, fileEntity.getFilePath(), type, severity, expectedHash, actualHash, message);
-        alertEventRepository.save(alert);
-        log.warn("Alert generated [{} - {}]: {}", severity, type, message);
+        // TODO [Sprint 2 - Backend]: Assigned to Priyanshu / Samarjeet
+        // 1. Retrieve current active baseline from baselineEntryRepository.
+        // 2. Check if file exists on disk (if not, flag MISSING, create AlertEvent).
+        // 3. Verify Ed25519 signature of the stored baseline with signingService.verify().
+        //    (If signature is invalid, flag SIGNATURE_INVALID, severity CRITICAL).
+        // 4. Compute current SHA-256 hash and compare with baseline hash:
+        //    - Match: status -> VERIFIED
+        //    - Mismatch: status -> TAMPERED, create AlertEvent (severity CRITICAL/HIGH).
     }
 }

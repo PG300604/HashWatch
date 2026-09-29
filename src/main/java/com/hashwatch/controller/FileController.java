@@ -6,11 +6,22 @@ import com.hashwatch.service.ComparisonService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.File;
-import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * =============================================================================
+ * DOMAIN: API
+ * ASSIGNED TO: Riya (Sprint 3)
+ * FOLDER / TARGET: src/main/java/com/hashwatch/controller/FileController.java
+ * DOC TO UPDATE: docs/TRD.md (Section 5.1 REST API Specs)
+ * =============================================================================
+ *
+ * Task Description:
+ * Expose RESTful endpoints for registering, listing, and removing files
+ * from the active file integrity monitoring watchlist.
+ */
 @RestController
 @RequestMapping("/api/files")
 public class FileController {
@@ -23,45 +34,36 @@ public class FileController {
         this.comparisonService = comparisonService;
     }
 
+    /**
+     * GET /api/files - List all watched files.
+     */
     @GetMapping
     public List<WatchedFile> listFiles() {
+        // TODO [Sprint 3 - API]: Assigned to Riya
         return watchedFileRepository.findAll();
     }
 
+    /**
+     * POST /api/files - Register a new file to watch and establish its baseline.
+     */
     @PostMapping
     public ResponseEntity<?> registerFile(@RequestBody Map<String, String> payload) {
+        // TODO [Sprint 3 - API]: Assigned to Riya
+        // 1. Extract 'filePath' from payload and validate existence on disk.
+        // 2. Persist WatchedFile entity.
+        // 3. Call comparisonService.establishBaseline(file).
+        // 4. Return ResponseEntity with 200 OK or appropriate 400 Bad Request error.
         String filePath = payload.get("filePath");
-        if (filePath == null || filePath.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "filePath is required"));
-        }
-
-        File file = new File(filePath);
-        if (!file.exists()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "File does not exist: " + filePath));
-        }
-
-        WatchedFile watchedFile = watchedFileRepository.findByFilePath(filePath)
-                .orElse(new WatchedFile(filePath, file.length(), LocalDateTime.now(), "UNTRACKED"));
-
-        watchedFile.setFileSize(file.length());
-        watchedFile.setActive(true);
-        watchedFile = watchedFileRepository.save(watchedFile);
-
-        try {
-            comparisonService.establishBaseline(watchedFile);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", "File registered but baseline failed: " + e.getMessage()));
-        }
-
-        return ResponseEntity.ok(watchedFile);
+        return ResponseEntity.ok(Map.of("message", "TODO: Implement file registration in Sprint 3", "filePath", String.valueOf(filePath)));
     }
 
+    /**
+     * DELETE /api/files/{id} - Deactivate a watched file from monitoring.
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> unwatchFile(@PathVariable Long id) {
-        return watchedFileRepository.findById(id).map(file -> {
-            file.setActive(false);
-            watchedFileRepository.save(file);
-            return ResponseEntity.ok(Map.of("message", "File deactivated from monitoring"));
-        }).orElse(ResponseEntity.notFound().build());
+        // TODO [Sprint 3 - API]: Assigned to Riya
+        // Soft delete: set active = false and save.
+        return ResponseEntity.ok(Map.of("message", "TODO: Implement unwatchFile in Sprint 3", "id", id));
     }
 }

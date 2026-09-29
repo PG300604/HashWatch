@@ -1,20 +1,38 @@
+/**
+ * =============================================================================
+ * DOMAIN: Frontend & API
+ * ASSIGNED TO: Riya (Sprint 4)
+ * FOLDER / TARGET: src/main/resources/static/js/app.js
+ * DOC TO UPDATE: docs/TRD.md (Section 5 REST API)
+ * =============================================================================
+ *
+ * Task Description:
+ * Client-side asynchronous interaction handling: triggers verification scans,
+ * submits new file registration, requests re-baselining, and resolves alerts.
+ */
+
+// Trigger manual integrity scan
 async function triggerScan() {
+    // TODO [Sprint 4 - Frontend]: Assigned to Riya
+    // POST /api/alerts/scan-now, alert user and reload on success
     try {
         const res = await fetch('/api/alerts/scan-now', { method: 'POST' });
         if (res.ok) {
-            alert('Integrity scan executed successfully.');
+            alert('Integrity scan executed.');
             location.reload();
         } else {
-            alert('Failed to trigger scan.');
+            alert('Scan trigger failed.');
         }
     } catch (e) {
         console.error(e);
-        alert('Error triggering scan: ' + e.message);
     }
 }
 
+// Register a new file
 async function registerFile(event) {
     event.preventDefault();
+    // TODO [Sprint 4 - Frontend]: Assigned to Riya
+    // Read #filePathInput, POST /api/files with { filePath }
     const filePath = document.getElementById('filePathInput').value.trim();
     if (!filePath) return;
 
@@ -24,76 +42,58 @@ async function registerFile(event) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ filePath })
         });
-        const data = await res.json();
         if (res.ok) {
-            alert('File registered and baseline established: ' + filePath);
             location.reload();
-        } else {
-            alert('Error: ' + (data.error || 'Failed to register file'));
         }
     } catch (e) {
         console.error(e);
-        alert('Request failed: ' + e.message);
     }
 }
 
+// Re-baseline a single file
 async function rebaselineSingle(fileId) {
-    if (!confirm('Are you sure you want to regenerate the cryptographic baseline for this file?')) return;
+    // TODO [Sprint 4 - Frontend]: Assigned to Riya
+    // POST /api/baselines/generate/{fileId}
+    if (!confirm('Regenerate and sign cryptographic baseline?')) return;
     try {
         const res = await fetch(`/api/baselines/generate/${fileId}`, { method: 'POST' });
-        if (res.ok) {
-            alert('Baseline refreshed and signed.');
-            location.reload();
-        } else {
-            alert('Failed to rebaseline file.');
-        }
+        if (res.ok) location.reload();
     } catch (e) {
         console.error(e);
-        alert('Request failed: ' + e.message);
     }
 }
 
+// Re-baseline all files
 async function rebaselineAll() {
-    if (!confirm('Regenerate and sign baselines for all active files?')) return;
+    // TODO [Sprint 4 - Frontend]: Assigned to Riya
+    if (!confirm('Rebaseline all files?')) return;
     try {
         const res = await fetch('/api/baselines/generate-all', { method: 'POST' });
-        if (res.ok) {
-            alert('All active baselines updated.');
-            location.reload();
-        } else {
-            alert('Failed to update baselines.');
-        }
+        if (res.ok) location.reload();
     } catch (e) {
         console.error(e);
-        alert('Request failed: ' + e.message);
     }
 }
 
+// Remove/unwatch file
 async function removeFile(fileId) {
-    if (!confirm('Stop monitoring this file?')) return;
+    // TODO [Sprint 4 - Frontend]: Assigned to Riya
+    if (!confirm('Deactivate monitoring for this file?')) return;
     try {
         const res = await fetch(`/api/files/${fileId}`, { method: 'DELETE' });
-        if (res.ok) {
-            location.reload();
-        } else {
-            alert('Failed to remove file.');
-        }
+        if (res.ok) location.reload();
     } catch (e) {
         console.error(e);
-        alert('Request failed: ' + e.message);
     }
 }
 
+// Resolve security alert
 async function resolveAlert(alertId) {
+    // TODO [Sprint 4 - Frontend]: Assigned to Riya
     try {
         const res = await fetch(`/api/alerts/${alertId}/resolve`, { method: 'POST' });
-        if (res.ok) {
-            location.reload();
-        } else {
-            alert('Failed to resolve alert.');
-        }
+        if (res.ok) location.reload();
     } catch (e) {
         console.error(e);
-        alert('Request failed: ' + e.message);
     }
 }

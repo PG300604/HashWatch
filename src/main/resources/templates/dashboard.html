@@ -10,6 +10,14 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!--
+    =============================================================================
+    DOMAIN: Frontend
+    ASSIGNED TO: Riya (Sprint 4)
+    FOLDER / TARGET: src/main/resources/templates/dashboard.html
+    DOC TO UPDATE: docs/PRD.md (Section 4 FR6)
+    =============================================================================
+    -->
     <header class="navbar">
         <div class="brand">
             <span class="logo-icon">🛡️</span>
@@ -28,16 +36,19 @@
         <section class="metrics-grid">
             <div class="metric-card">
                 <h3>Watched Files</h3>
+                <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Render activeCount -->
                 <p class="metric-value" th:text="${activeCount}">0</p>
                 <span class="metric-sub">Monitored periodically</span>
             </div>
             <div class="metric-card">
                 <h3>Active Baselines</h3>
+                <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Render count of baselines -->
                 <p class="metric-value" th:text="${#lists.size(baselines)}">0</p>
                 <span class="metric-sub">SHA-256 + Ed25519</span>
             </div>
             <div class="metric-card" th:classappend="${alertCount > 0} ? 'card-danger' : 'card-success'">
                 <h3>Unresolved Alerts</h3>
+                <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Render alertCount -->
                 <p class="metric-value" th:text="${alertCount}">0</p>
                 <span class="metric-sub" th:text="${alertCount > 0} ? 'Tampering detected!' : 'All signatures valid'">Status</span>
             </div>
@@ -46,6 +57,7 @@
         <!-- Register New File Form -->
         <section class="card">
             <h2>Add File to Watchlist</h2>
+            <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Form submit handling via JS -->
             <form id="addFileForm" onsubmit="registerFile(event)" class="form-row">
                 <input type="text" id="filePathInput" placeholder="Enter absolute file path (e.g. /etc/hosts or C:\system.conf)" required>
                 <button type="submit" class="btn btn-secondary">+ Register & Baseline</button>
@@ -70,6 +82,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Populate watched file list with status pills -->
                         <tr th:if="${#lists.isEmpty(files)}">
                             <td colspan="5" class="empty-state">No files registered yet. Add a file path above to begin monitoring.</td>
                         </tr>

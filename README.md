@@ -72,6 +72,7 @@ Navigate to: **[http://localhost:8080](http://localhost:8080)**
 
 | Document | Purpose |
 | :--- | :--- |
+| [`docs/BRAIN.md`](docs/BRAIN.md) | **Project Brain & Architecture Base:** High-level vision, ADRs, dynamic sprint assignments, and collaboration philosophy. |
 | [`docs/PRD.md`](docs/PRD.md) | **Product Requirements Document:** Problem statement, personas, functional requirements (FR1–FR8), non-functional goals. |
 | [`docs/TRD.md`](docs/TRD.md) | **Technical Requirements Document:** Architecture, tech stack rationale, cryptographic specs (SHA-256 + Ed25519), REST API schemas. |
 | [`docs/ERD.md`](docs/ERD.md) | **Entity-Relationship Document:** Complete Mermaid ER diagram, PostgreSQL DDL script, indexes, constraints. |

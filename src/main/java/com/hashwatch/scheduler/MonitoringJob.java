@@ -8,6 +8,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+/**
+ * =============================================================================
+ * DOMAIN: Backend
+ * ASSIGNED TO: Samarjeet (Sprint 2)
+ * FOLDER / TARGET: src/main/java/com/hashwatch/scheduler/MonitoringJob.java
+ * DOC TO UPDATE: docs/TRD.md (Section 1 & 2)
+ * =============================================================================
+ *
+ * Task Description:
+ * Quartz Job triggered periodically to execute file integrity verification scans.
+ */
 @Component
 public class MonitoringJob implements Job {
 
@@ -21,12 +32,9 @@ public class MonitoringJob implements Job {
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        log.debug("Quartz MonitoringJob triggered: scanning files for integrity validation");
-        try {
-            comparisonService.runVerificationScan();
-        } catch (Exception e) {
-            log.error("Error occurred while executing MonitoringJob: {}", e.getMessage(), e);
-            throw new JobExecutionException(e);
-        }
+        log.debug("Quartz MonitoringJob firing... (Scheduled periodic execution)");
+        // TODO [Sprint 2 - Backend]: Assigned to Samarjeet
+        // 1. Invoke comparisonService.runVerificationScan()
+        // 2. Catch and handle any transient I/O exceptions so the scheduler remains resilient
     }
 }
