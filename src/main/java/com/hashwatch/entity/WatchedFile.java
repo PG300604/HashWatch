@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 
@@ -38,12 +39,15 @@ public class WatchedFile {
 
     @NotNull(message = "File status is required")
     @Enumerated(EnumType.STRING)
+    @ColumnDefault("'UNTRACKED'")
     @Column(name = "status", nullable = false, length = 50)
     private FileStatus status = FileStatus.UNTRACKED;
 
+    @ColumnDefault("true")
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
+    @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -106,7 +110,7 @@ public class WatchedFile {
     }
 
     public void setStatus(FileStatus status) {
-        this.status = status;
+        this.status = (status != null) ? status : FileStatus.UNTRACKED;
     }
 
     public boolean isActive() {

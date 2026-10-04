@@ -22,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * TARGET: src/test/java/com/hashwatch/repository/RepositoryIntegrationTest.java
  * =============================================================================
  *
- * Verifies JPA entity mappings, indexes, unique constraints, enum persistence,
+ * Verifies JPA entity mappings, indexes, unique constraints, enum persistence
+ * (FileStatus, EventType, AlertSeverity), default schema migration behavior,
  * foreign-key cascade / set-null semantics, and repository query methods.
  */
 @DataJpaTest
@@ -66,26 +67,81 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("S1-T4 [RepoMind #01]: Persist WatchedFile with each FileStatus value and assert enum string storage and retrieval")
-    void testPersistAllFileStatusEnumValues() {
+    @DisplayName("S1-T4 [RepoMind]: Persist and retrieve every enum value (FileStatus, EventType, AlertSeverity) and verify exact string representation in DB")
+    void testAllEnumValuesMapToDatabaseStrings() {
+        // 1. Verify all FileStatus enum values on WatchedFile
         for (FileStatus status : FileStatus.values()) {
             String path = "/etc/test/status_" + status.name().toLowerCase() + ".conf";
             WatchedFile file = new WatchedFile(path, 256L, LocalDateTime.now(), status);
             WatchedFile saved = watchedFileRepository.saveAndFlush(file);
             entityManager.clear();
 
-            // Verify JPA enum retrieval
             List<WatchedFile> foundByStatus = watchedFileRepository.findByStatus(status);
             assertEquals(1, foundByStatus.size());
             assertEquals(status, foundByStatus.get(0).getStatus());
 
-            // Verify underlying database column stores the exact enum string name
             String rawDbStatus = (String) entityManager
                     .createNativeQuery("SELECT CAST(status AS VARCHAR) FROM watched_files WHERE id = :id")
                     .setParameter("id", saved.getId())
                     .getSingleResult();
             assertEquals(status.name(), rawDbStatus);
         }
+
+        // 2. Verify all combinations of EventType and AlertSeverity enum values on AlertEvent
+        WatchedFile parentFile = watchedFileRepository.saveAndFlush(
+                new WatchedFile("/etc/test/alert_parent.conf", 512L, LocalDateTime.now(), FileStatus.TAMPERED)
+        );
+
+        for (EventType eventType : EventType.values()) {
+            for (AlertSeverity severity : AlertSeverity.values()) {
+                AlertEvent alert = new AlertEvent(
+                        parentFile,
+                        parentFile.getFilePath(),
+                        eventType,
+                        severity,
+                        SAMPLE_SHA256,
+                        ALT_SHA256,
+                        "Testing enum pair: " + eventType.name() + " / " + severity.name()
+                );
+                AlertEvent savedAlert = alertEventRepository.saveAndFlush(alert);
+                entityManager.clear();
+
+                Optional<AlertEvent> retrievedOpt = alertEventRepository.findById(savedAlert.getId());
+                assertTrue(retrievedOpt.isPresent());
+                assertEquals(eventType, retrievedOpt.get().getEventType());
+                assertEquals(severity, retrievedOpt.get().getSeverity());
+
+                Object[] rawRow = (Object[]) entityManager
+                        .createNativeQuery("SELECT CAST(event_type AS VARCHAR), CAST(severity AS VARCHAR) FROM alert_events WHERE id = :id")
+                        .setParameter("id", savedAlert.getId())
+                        .getSingleResult();
+                assertEquals(eventType.name(), rawRow[0]);
+                assertEquals(severity.name(), rawRow[1]);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("S1-T4 [RepoMind]: DB migration and rows missing the status field default to UNTRACKED without errors")
+    void testSchemaMigrationAndRowsMissingStatusDefaultToUntracked() {
+        // Case A: Simulate a pre-existing row or SQL insert that omits the 'status' column
+        int inserted = entityManager.createNativeQuery(
+                "INSERT INTO watched_files (file_path, file_size, is_active, created_at) " +
+                "VALUES ('/etc/legacy_pre_migration.conf', 1024, true, CURRENT_TIMESTAMP)"
+        ).executeUpdate();
+        assertEquals(1, inserted);
+        entityManager.flush();
+        entityManager.clear();
+
+        Optional<WatchedFile> migratedRow = watchedFileRepository.findByFilePath("/etc/legacy_pre_migration.conf");
+        assertTrue(migratedRow.isPresent(), "Row inserted without explicit status column must be retrievable");
+        assertEquals(FileStatus.UNTRACKED, migratedRow.get().getStatus(),
+                "Missing status field in DB row must default to FileStatus.UNTRACKED");
+
+        // Case B: Simulate entity constructed with null status before persistence
+        WatchedFile nullStatusEntity = new WatchedFile("/etc/null_status.conf", 512L, LocalDateTime.now(), null);
+        WatchedFile saved = assertDoesNotThrow(() -> watchedFileRepository.saveAndFlush(nullStatusEntity));
+        assertEquals(FileStatus.UNTRACKED, saved.getStatus());
     }
 
     @Test
@@ -162,7 +218,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("S1-T4 [RepoMind #02]: Deleting WatchedFile cascades to BaselineEntry and sets watched_file_id NULL on AlertEvent")
+    @DisplayName("S1-T4 [RepoMind]: Deleting WatchedFile cascades to BaselineEntry and sets watched_file_id NULL on AlertEvent")
     void testDeleteWatchedFileCascadesToBaselineAndSetsNullOnAlertEvent() {
         WatchedFile file = watchedFileRepository.saveAndFlush(
                 new WatchedFile("/etc/sudoers", 1024L, LocalDateTime.now(), FileStatus.VERIFIED)
@@ -217,7 +273,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("S1-T4 [RepoMind #03]: AlertEvent creation with null watched_file_id records file_path snapshot properly")
+    @DisplayName("S1-T4 [RepoMind]: AlertEvent creation with null watched_file_id records file_path snapshot properly")
     void testAlertEventCreationWithNullWatchedFileReference() {
         AlertEvent detachedAlert = new AlertEvent(
                 null,
