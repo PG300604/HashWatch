@@ -1,6 +1,7 @@
 package com.hashwatch.repository;
 
 import com.hashwatch.entity.*;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * =============================================================================
  *
  * Verifies JPA entity mappings, indexes, unique constraints, enum persistence,
- * and repository query methods against the H2 test database.
+ * foreign-key cascade / set-null semantics, and repository query methods.
  */
 @DataJpaTest
 @ActiveProfiles("h2")
@@ -36,6 +37,9 @@ class RepositoryIntegrationTest {
 
     @Autowired
     private AlertEventRepository alertEventRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private static final String SAMPLE_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
     private static final String ALT_SHA256    = "a3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
@@ -59,6 +63,29 @@ class RepositoryIntegrationTest {
         List<WatchedFile> verifiedFiles = watchedFileRepository.findByStatus(FileStatus.VERIFIED);
         assertEquals(1, verifiedFiles.size());
         assertEquals(1L, watchedFileRepository.countByActiveTrue());
+    }
+
+    @Test
+    @DisplayName("S1-T4 [RepoMind #01]: Persist WatchedFile with each FileStatus value and assert enum string storage and retrieval")
+    void testPersistAllFileStatusEnumValues() {
+        for (FileStatus status : FileStatus.values()) {
+            String path = "/etc/test/status_" + status.name().toLowerCase() + ".conf";
+            WatchedFile file = new WatchedFile(path, 256L, LocalDateTime.now(), status);
+            WatchedFile saved = watchedFileRepository.saveAndFlush(file);
+            entityManager.clear();
+
+            // Verify JPA enum retrieval
+            List<WatchedFile> foundByStatus = watchedFileRepository.findByStatus(status);
+            assertEquals(1, foundByStatus.size());
+            assertEquals(status, foundByStatus.get(0).getStatus());
+
+            // Verify underlying database column stores the exact enum string name
+            String rawDbStatus = (String) entityManager
+                    .createNativeQuery("SELECT CAST(status AS VARCHAR) FROM watched_files WHERE id = :id")
+                    .setParameter("id", saved.getId())
+                    .getSingleResult();
+            assertEquals(status.name(), rawDbStatus);
+        }
     }
 
     @Test
@@ -132,5 +159,89 @@ class RepositoryIntegrationTest {
         alert1.setResolved(true);
         alertEventRepository.saveAndFlush(alert1);
         assertEquals(0L, alertEventRepository.countByResolvedFalse());
+    }
+
+    @Test
+    @DisplayName("S1-T4 [RepoMind #02]: Deleting WatchedFile cascades to BaselineEntry and sets watched_file_id NULL on AlertEvent")
+    void testDeleteWatchedFileCascadesToBaselineAndSetsNullOnAlertEvent() {
+        WatchedFile file = watchedFileRepository.saveAndFlush(
+                new WatchedFile("/etc/sudoers", 1024L, LocalDateTime.now(), FileStatus.VERIFIED)
+        );
+
+        BaselineEntry baseline = baselineEntryRepository.saveAndFlush(
+                new BaselineEntry(file, SAMPLE_SHA256, SAMPLE_SIG, "key-v1")
+        );
+
+        AlertEvent alert = alertEventRepository.saveAndFlush(
+                new AlertEvent(
+                        file,
+                        file.getFilePath(),
+                        EventType.MISMATCH,
+                        AlertSeverity.HIGH,
+                        SAMPLE_SHA256,
+                        ALT_SHA256,
+                        "Integrity anomaly on /etc/sudoers"
+                )
+        );
+
+        Long fileId = file.getId();
+        Long baselineId = baseline.getId();
+        Long alertId = alert.getId();
+
+        entityManager.flush();
+        entityManager.clear();
+
+        // Delete parent WatchedFile and flush to trigger DB foreign key actions
+        assertDoesNotThrow(() -> {
+            watchedFileRepository.deleteById(fileId);
+            watchedFileRepository.flush();
+        });
+        entityManager.clear();
+
+        // 1. WatchedFile is deleted
+        assertFalse(watchedFileRepository.findById(fileId).isPresent());
+
+        // 2. Associated BaselineEntry is deleted via ON DELETE CASCADE
+        assertFalse(baselineEntryRepository.findById(baselineId).isPresent(),
+                "BaselineEntry should be cascade-deleted when parent WatchedFile is removed");
+
+        // 3. Related AlertEvent survives with watched_file_id set to NULL via ON DELETE SET NULL
+        Optional<AlertEvent> survivingAlertOpt = alertEventRepository.findById(alertId);
+        assertTrue(survivingAlertOpt.isPresent(),
+                "AlertEvent must survive parent WatchedFile deletion for audit history");
+        AlertEvent survivingAlert = survivingAlertOpt.get();
+        assertNull(survivingAlert.getWatchedFile(),
+                "watched_file_id must be set to NULL after WatchedFile deletion");
+        assertEquals("/etc/sudoers", survivingAlert.getFilePath(),
+                "Historical filePath snapshot must remain intact");
+    }
+
+    @Test
+    @DisplayName("S1-T4 [RepoMind #03]: AlertEvent creation with null watched_file_id records file_path snapshot properly")
+    void testAlertEventCreationWithNullWatchedFileReference() {
+        AlertEvent detachedAlert = new AlertEvent(
+                null,
+                "/opt/app/deleted_config.yaml",
+                EventType.MISSING_FILE,
+                AlertSeverity.HIGH,
+                SAMPLE_SHA256,
+                null,
+                "Alert logged for unlinked/removed file record"
+        );
+
+        AlertEvent saved = assertDoesNotThrow(() -> alertEventRepository.saveAndFlush(detachedAlert));
+        entityManager.clear();
+
+        Optional<AlertEvent> retrievedOpt = alertEventRepository.findById(saved.getId());
+        assertTrue(retrievedOpt.isPresent());
+        AlertEvent retrieved = retrievedOpt.get();
+
+        assertNull(retrieved.getWatchedFile());
+        assertEquals("/opt/app/deleted_config.yaml", retrieved.getFilePath());
+        assertEquals(EventType.MISSING_FILE, retrieved.getEventType());
+        assertEquals(AlertSeverity.HIGH, retrieved.getSeverity());
+        assertEquals(SAMPLE_SHA256, retrieved.getExpectedHash());
+        assertNull(retrieved.getActualHash());
+        assertNotNull(retrieved.getDetectedAt());
     }
 }
