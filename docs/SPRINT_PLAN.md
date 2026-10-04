@@ -19,12 +19,16 @@
 ### Sprint 1: Foundation, Cryptographic Primitives & Database Schema
 **Focus:** Cryptology, DBMS, DevOps Setup.
 
-| Task ID | Domain | Assigned To | Folder / Target Files | Task Description | Doc Update Required |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **S1-T1** | DevOps / DBMS | Priyanshu | `docker-compose.yml`, `src/main/resources/application*.properties` | Setup Docker containerized PostgreSQL 16 & H2 fallbacks; verify connection pooling. | `docs/SETUP.md` |
-| **S1-T2** | Cryptology | Riya | `src/main/java/com/hashwatch/service/SigningService.java`, `src/test/java/.../SigningServiceTest.java` | Implement Ed25519 keypair loading, signing, and verification tests with test vectors. | `docs/TRD.md` (Sec 3.2) |
-| **S1-T3** | Cryptology & Backend | Samarjeet | `src/main/java/com/hashwatch/service/HashingService.java`, `src/test/java/.../HashingServiceTest.java` | Benchmark and verify 64 KB buffered SHA-256 streaming on large test files. | `docs/TRD.md` (Sec 3.1) |
-| **S1-T4** | DBMS | Priyanshu | `src/main/java/com/hashwatch/entity/`, `docs/ERD.md` | Verify JPA entity constraints, foreign keys, and indexes for `WatchedFile` and `BaselineEntry`. | `docs/ERD.md` |
+| Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **S1-T1** | DevOps / DBMS | Priyanshu | ✅ **Done** | `mvnw`, `mvnw.cmd`, `.gitattributes`, `docker-compose.yml`, `src/main/resources/application*.properties` | Bundle Apache Maven Wrapper (v3.9.9); configure HikariCP connection pool (`HashWatchHikariPool`); setup dual database profiles (`h2` default + `postgres`). | `docs/SETUP.md`, `docs/TRD.md` |
+| **S1-T2** | Cryptology | Riya | ⏳ **Pending (Riya)** | `src/main/java/com/hashwatch/service/SigningService.java`, `src/test/java/.../SigningServiceTest.java` | Implement Ed25519 keypair loading/generation, signing, and verification; enable and pass `SigningServiceTest`. | `docs/TRD.md` (Sec 3.2) |
+| **S1-T3** | Cryptology & Backend | Samarjeet | ⏳ **Pending (Samarjeet)** | `src/main/java/com/hashwatch/service/HashingService.java`, `src/test/java/.../HashingServiceTest.java` | Implement 64 KB buffered SHA-256 streaming in `HashingService`; enable and pass `HashingServiceTest`. | `docs/TRD.md` (Sec 3.1) |
+| **S1-T4** | DBMS | Priyanshu | ✅ **Done** | `src/main/java/com/hashwatch/entity/`, `repository/`, `src/test/java/.../RepositoryIntegrationTest.java` | Implement strongly-typed enums (`FileStatus`, `EventType`, `AlertSeverity`), JPA `@Index` & `@ColumnDefault` annotations, FK `CASCADE` / `SET NULL` rules, and 8 `@DataJpaTest` integration tests. | `docs/ERD.md`, `docs/PACKAGE_STRUCTURE.md` |
+
+#### Sprint 1 Completion Summary (Priyanshu's Tasks: `S1-T1` & `S1-T4`)
+- **Build & DevOps (`S1-T1`):** Added `mvnw` / `mvnw.cmd` (Maven 3.9.9), `.gitattributes` (enforcing LF on `mvnw`), `application-postgres.properties`, and HikariCP connection pool configuration in `application.properties`.
+- **DBMS & Schema (`S1-T4`):** Created `FileStatus`, `EventType`, and `AlertSeverity` enums; added JPA `@Index`, `@ColumnDefault`, `@OnDelete(CASCADE / SET_NULL)`, and `@PrePersist` hooks on `WatchedFile`, `BaselineEntry`, and `AlertEvent`; created `RepositoryIntegrationTest.java` (8/8 tests passing, including RepoMind edge cases for enum string mappings, missing `status` migration defaults, FK cascade/set-null, and detached `AlertEvent` creation).
 
 ---
 
@@ -35,7 +39,7 @@
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **S2-T1** | Backend | Priyanshu | `src/main/java/com/hashwatch/service/ComparisonService.java` | Implement `establishBaseline()` and `verifyFile()` logic with status state machine. | `docs/DFD.md` (Level 2) |
 | **S2-T2** | Backend | Samarjeet | `src/main/java/com/hashwatch/scheduler/MonitoringJob.java`, `config/SchedulerConfig.java` | Quartz trigger execution loop; handle job exceptions and scan timeouts. | `docs/TRD.md` (Scheduler) |
-| **S2-T3** | DBMS & API | Riya | `src/main/java/com/hashwatch/repository/`, `entity/AlertEvent.java` | Implement alert queries (unresolved alerts, severity filters) and persistence tests. | `docs/ERD.md` (Table 2.3) |
+| **S2-T3** | DBMS & API | Riya | `src/main/java/com/hashwatch/repository/`, `entity/AlertEvent.java` | Implement alert queries (unresolved alerts, severity filters) and persistence tests. | `docs/ERD.md` (Table 3.3) |
 
 ---
 

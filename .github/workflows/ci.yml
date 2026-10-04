@@ -2,7 +2,7 @@ name: HashWatch CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "sprint-**" ]
   pull_request:
     branches: [ "main" ]
 
@@ -20,8 +20,8 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    - name: Build and Test with Maven
-      run: mvn clean test -Dspring.profiles.active=h2
+    - name: Build and Test with Maven Wrapper
+      run: ./mvnw clean test -Dspring.profiles.active=h2
 
     - name: Set up Python
       uses: actions/setup-python@v5

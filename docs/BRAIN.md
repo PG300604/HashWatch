@@ -40,13 +40,23 @@ HashWatch is designed from the ground up as a shared team effort. To avoid situa
 
 ### ADR-004: Dual-Profile Database Strategy (PostgreSQL + In-Memory H2)
 - **Context:** Teammates may not have PostgreSQL or Docker installed immediately.
-- **Decision:** Provide `application.properties` targeting PostgreSQL alongside `application-h2.properties` for zero-install instant local dev (`-Dspring.profiles.active=h2`).
+- **Decision:** Default `spring.profiles.active=h2` in `application.properties` (`application-h2.properties`) for zero-install instant local dev, and provide `application-postgres.properties` for production PostgreSQL 16 (`-Dspring-boot.run.profiles=postgres`), backed by HikariCP (`HashWatchHikariPool`).
 - **Consequence:** Immediate onboarding for any teammate on any operating system without environmental blockers.
 
 ### ADR-005: Thymeleaf Server-Side UI vs SPA
 - **Context:** The project requires a clean dashboard for demonstrations without requiring Node.js, npm, or complex frontend build pipelines.
 - **Decision:** Thymeleaf HTML5 templates with vanilla CSS and asynchronous `fetch()` JavaScript.
 - **Consequence:** Instant hot reload, zero frontend dependencies, and fast rendering.
+
+### ADR-006: Strongly-Typed Domain Enums + `@ColumnDefault` for Schema Migration Safety (Sprint 1)
+- **Context:** Raw `String` status/severity columns are prone to typos across teammates, and schema migrations on existing rows can fail if `status` is omitted.
+- **Decision:** Created `FileStatus`, `EventType`, and `AlertSeverity` enums mapped with `@Enumerated(EnumType.STRING)` and `@ColumnDefault("'UNTRACKED'")` / `@PrePersist` hooks, plus `@OnDelete(CASCADE)` on `BaselineEntry` and `@OnDelete(SET_NULL)` on `AlertEvent`.
+- **Consequence:** Compile-time type safety in Java, human-readable strings in SQL/Python analysis, and safe cascade/set-null referential integrity verified by 8 `@DataJpaTest` tests.
+
+### ADR-007: Zero-Binary Apache Maven Wrapper (`mvnw` / `mvnw.cmd`) (Sprint 1)
+- **Context:** Teammates on Windows/Linux may not have Apache Maven installed globally on their system `PATH`.
+- **Decision:** Bundled `only-script` Maven Wrapper scripts (`mvnw.cmd` and `mvnw` with `.gitattributes` enforcing `eol=lf` and `+x` permissions) that auto-download Maven 3.9.9 into `~/.m2/wrapper/dists`.
+- **Consequence:** Every developer and CI runner builds with the exact same Maven 3.9.9 binary out of the box.
 
 ---
 
@@ -55,9 +65,9 @@ HashWatch is designed from the ground up as a shared team effort. To avoid situa
 ```mermaid
 flowchart TD
     subgraph Sprint1["Sprint 1: Crypto & DB Foundations"]
-        S1P["Priyanshu: DevOps & DB (Docker, H2/Postgres)"]
-        S1R["Riya: Cryptology (Ed25519 key gen & sign/verify)"]
-        S1S["Samarjeet: Cryptology & Backend (SHA-256 streaming)"]
+        S1P["✅ Priyanshu: DevOps & DB (Maven Wrapper, HikariCP, Enums, JPA Indexes, @DataJpaTest)"]
+        S1R["⏳ Riya: Cryptology (Ed25519 key gen & sign/verify)"]
+        S1S["⏳ Samarjeet: Cryptology & Backend (SHA-256 streaming)"]
     end
 
     subgraph Sprint2["Sprint 2: Comparison Engine & Scheduler"]
