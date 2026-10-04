@@ -58,7 +58,7 @@
                         <tr th:each="alert : ${alerts}" th:classappend="${!alert.resolved ? 'row-unresolved' : 'row-resolved'}">
                             <td>
                                 <span class="severity-pill"
-                                      th:classappend="${alert.severity == 'CRITICAL' ? 'severity-critical' : (alert.severity == 'HIGH' ? 'severity-high' : 'severity-low')}"
+                                      th:classappend="${alert.severity.name() == 'CRITICAL' ? 'severity-critical' : (alert.severity.name() == 'HIGH' ? 'severity-high' : 'severity-low')}"
                                       th:text="${alert.severity}">HIGH</span>
                             </td>
                             <td class="font-bold" th:text="${alert.eventType}">MISMATCH</td>

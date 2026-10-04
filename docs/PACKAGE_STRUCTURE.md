@@ -5,6 +5,7 @@ HashWatch follows standard Maven multi-tier conventions. Refer to this map to lo
 ```
 hashwatch/
 ├── pom.xml                                  # Maven project object model & dependencies
+├── mvnw / mvnw.cmd                          # Maven Wrapper (auto-downloads Maven 3.9.9)
 ├── docker-compose.yml                       # PostgreSQL 16 container definition
 ├── .gitignore                               # Excludes keys, target, local configs, venv
 ├── README.md                                # Project landing page and documentation index
@@ -30,7 +31,10 @@ hashwatch/
 │   │   │   ├── entity/                      # [DBMS Domain]
 │   │   │   │   ├── WatchedFile.java         # JPA entity for registered files
 │   │   │   │   ├── BaselineEntry.java       # JPA entity for signed baselines
-│   │   │   │   └── AlertEvent.java          # JPA entity for security anomaly logs
+│   │   │   │   ├── AlertEvent.java          # JPA entity for security anomaly logs
+│   │   │   │   ├── FileStatus.java          # Enum: VERIFIED, TAMPERED, MISSING, UNTRACKED, SIGNATURE_INVALID
+│   │   │   │   ├── EventType.java           # Enum: MISMATCH, UNAUTHORIZED_MODIFICATION, MISSING_FILE, SIGNATURE_INVALID
+│   │   │   │   └── AlertSeverity.java       # Enum: LOW, MEDIUM, HIGH, CRITICAL
 │   │   │   │
 │   │   │   ├── repository/                  # [DBMS Domain]
 │   │   │   │   ├── WatchedFileRepository.java
@@ -41,8 +45,9 @@ hashwatch/
 │   │   │       └── SchedulerConfig.java     # Quartz job detail and trigger configuration
 │   │   │
 │   │   └── resources/
-│   │       ├── application.properties       # Base application config (PostgreSQL)
+│   │       ├── application.properties       # Base config + HikariCP connection pool (defaults to h2)
 │   │       ├── application-h2.properties    # In-memory H2 profile config
+│   │       ├── application-postgres.properties # PostgreSQL 16 production profile config
 │   │       ├── application-local.properties.example # Template for local developer overrides
 │   │       ├── templates/                   # [Frontend Domain]
 │   │       │   ├── dashboard.html           # Main monitoring dashboard
@@ -55,9 +60,11 @@ hashwatch/
 │   │
 │   └── test/java/com/hashwatch/             # Automated test suite
 │       ├── HashWatchApplicationTests.java
+│       ├── repository/
+│       │   └── RepositoryIntegrationTest.java # @DataJpaTest DBMS verification suite (S1-T4)
 │       └── service/
-│           ├── HashingServiceTest.java      # Unit tests for SHA-256 hashing
-│           └── SigningServiceTest.java      # Unit tests for Ed25519 signatures
+│           ├── HashingServiceTest.java      # Unit tests for SHA-256 hashing (S1-T3)
+│           └── SigningServiceTest.java      # Unit tests for Ed25519 signatures (S1-T2)
 │
 ├── python-analysis/                         # [Analysis Domain]
 │   ├── requirements.txt                     # Python dependencies (matplotlib, numpy, etc.)
@@ -67,6 +74,7 @@ hashwatch/
 │   └── charts/                              # Output directory for generated figures (.gitkeep)
 │
 └── docs/                                    # Project Knowledge Base
+    ├── BRAIN.md                             # Project Brain & Architecture Decision Records
     ├── PRD.md                               # Product Requirements Document
     ├── TRD.md                               # Technical Requirements Document
     ├── ERD.md                               # Entity-Relationship Document & DDL
