@@ -53,14 +53,18 @@ git clone https://github.com/<YOUR_USERNAME>/HashWatch.git
 cd HashWatch
 ```
 
-### 2. Run with H2 In-Memory DB (No Docker/DB setup needed)
-```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=h2
+### 2. Run with H2 In-Memory DB (Default — No Docker/DB setup needed)
+```powershell
+# Windows
+.\mvnw.cmd spring-boot:run
+
+# Linux / macOS
+./mvnw spring-boot:run
 ```
-Or with PostgreSQL via Docker:
-```bash
+Or with PostgreSQL 16 via Docker:
+```powershell
 docker compose up -d
-mvn spring-boot:run
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=postgres
 ```
 
 ### 3. Open Web Dashboard
@@ -82,7 +86,7 @@ Navigate to: **[http://localhost:8080](http://localhost:8080)**
 | [`docs/TIMELINE.md`](docs/TIMELINE.md) | **Gantt Chart Milestone Timeline:** Visual roadmap of project deliverables. |
 | [`docs/WEEKLY_DEADLINES.md`](docs/WEEKLY_DEADLINES.md) | **Sprint Deadlines Checklist:** Acceptance criteria and submission deadlines. |
 | [`docs/PACKAGE_STRUCTURE.md`](docs/PACKAGE_STRUCTURE.md) | **Folder Layout:** Map of packages, classes, resources, and tests. |
-| [`docs/SETUP.md`](docs/SETUP.md) | **Developer Setup:** Java 17, Maven, PostgreSQL, Python virtual environment, troubleshooting. |
+| [`docs/SETUP.md`](docs/SETUP.md) | **Developer Setup:** Java 17, Maven Wrapper, PostgreSQL, Python virtual environment, troubleshooting. |
 | [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) | **Contribution & Docs Rules:** Branch naming, conventional commits, rule of updating docs with every PR. |
 | [`docs/RESEARCH_BENCHMARKS.md`](docs/RESEARCH_BENCHMARKS.md) | **Academic Papers:** Published benchmark comparisons (snaproot, Ed25519 reference, commodity hardware hashing). |
 
@@ -90,9 +94,13 @@ Navigate to: **[http://localhost:8080](http://localhost:8080)**
 
 ## 🧪 Testing & Benchmarks
 
-- **Run Java Unit & Security Tests:**
-  ```bash
-  mvn test
+- **Run Java Unit, `@DataJpaTest` & Security Tests:**
+  ```powershell
+  # Windows
+  .\mvnw.cmd test
+
+  # Linux / macOS
+  ./mvnw test
   ```
 - **Run Python Cryptographic & Latency Benchmarks:**
   ```bash

@@ -53,9 +53,11 @@ flowchart TB
 | Layer | Technology | Version | Rationale |
 | :--- | :--- | :--- | :--- |
 | **Language** | Java | 17 (LTS) | Strong typing, LTS stability, native JCA Ed25519 support (JEP 339), modern heap memory management. |
+| **Build Tool** | Apache Maven Wrapper | 3.9.9 (`mvnw`) | Zero-binary (`only-script`) wrapper ensures identical build environment across Windows, Linux, and CI. |
 | **Framework** | Spring Boot | 3.3.4 | Industry-standard dependency injection, autoconfiguration, embedded Tomcat, native metrics. |
 | **Database** | PostgreSQL | 16-alpine | Enterprise ACID compliance, robust indexing on hashes and timestamps, production standard. |
-| **Fallback DB** | H2 Database | 2.x | Zero-setup in-memory database for rapid onboarding and unit testing. |
+| **Fallback DB** | H2 Database | 2.x | Zero-setup in-memory database for rapid onboarding and `@DataJpaTest` unit testing. |
+| **Connection Pool** | HikariCP | 5.x | High-performance JDBC connection pooling (`HashWatchHikariPool`: max 10, min idle 2). |
 | **Scheduler** | Quartz Scheduler | 2.3.x | Enterprise job clustering support, durable job details, flexible cron and simple trigger intervals. |
 | **Cryptography** | Java JCA + BouncyCastle | 1.78.1 | RFC 8032 Ed25519 compliant, PKCS#8 and X.509 standard key encodings. |
 | **Frontend** | Thymeleaf + CSS/JS | 3.x | Zero-node build step, server-side rendered, lightweight, high performance. |
@@ -90,14 +92,36 @@ String hexDigest = HexFormat.of().formatHex(digest.digest());
 
 ---
 
-## 4. Database Design & Persistence
+## 4. Database Design, Connection Pooling & Persistence (Sprint 1: S1-T1 & S1-T4)
 
-The relational schema maintains strict foreign key constraints and transactional integrity.
+### 4.1. Dual-Profile & HikariCP Configuration
+- **Default Profile (`h2`):** Activated in [`application.properties`](../src/main/resources/application.properties) (`spring.profiles.active=h2`) using [`application-h2.properties`](../src/main/resources/application-h2.properties) for instant zero-setup development and automated testing.
+- **Production Profile (`postgres`):** Activated via `-Dspring-boot.run.profiles=postgres` using [`application-postgres.properties`](../src/main/resources/application-postgres.properties) targeting PostgreSQL 16 (`localhost:5432/hashwatch_db`).
+- **HikariCP Settings (`HashWatchHikariPool`):**
+  - `maximum-pool-size=10`, `minimum-idle=2`, `idle-timeout=300000` (5m), `connection-timeout=20000` (20s), `max-lifetime=1800000` (30m).
+  - `spring.jpa.open-in-view=false` to enforce clean transaction boundaries before the view layer.
 
-### Tables
-1. **`watched_files`**: Registry of monitored paths, status, size, modification timestamps.
-2. **`baseline_entries`**: Immutable snapshots containing the SHA-256 hash, Ed25519 signature, and active baseline indicator.
-3. **`alert_events`**: Audit trail of integrity violations, severity levels, mismatched hashes, and triage flags.
+### 4.2. Strongly-Typed Domain Enums & Schema Migration Safety
+All status and classification fields use Java `enum` types annotated with `@Enumerated(EnumType.STRING)` and `@ColumnDefault` so database migrations and native SQL inserts remain safe:
+- [`FileStatus`](../src/main/java/com/hashwatch/entity/FileStatus.java): `VERIFIED`, `TAMPERED`, `MISSING`, `UNTRACKED` (default via `@ColumnDefault("'UNTRACKED'")` and `@PrePersist`), `SIGNATURE_INVALID`.
+- [`EventType`](../src/main/java/com/hashwatch/entity/EventType.java): `MISMATCH`, `UNAUTHORIZED_MODIFICATION`, `MISSING_FILE`, `SIGNATURE_INVALID`.
+- [`AlertSeverity`](../src/main/java/com/hashwatch/entity/AlertSeverity.java): `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
+
+### 4.3. Relational Tables & Referential Integrity
+1. **`watched_files` ([`WatchedFile.java`](../src/main/java/com/hashwatch/entity/WatchedFile.java))**: Registry of monitored paths, status, size, and modification timestamps. Indexed by `idx_watched_files_path` (unique), `idx_watched_files_active`, and `idx_watched_files_status`.
+2. **`baseline_entries` ([`BaselineEntry.java`](../src/main/java/com/hashwatch/entity/BaselineEntry.java))**: Immutable snapshots containing the 64-character SHA-256 hash, Ed25519 signature, and `is_current` flag. Foreign key `fk_baseline_watched_file` enforces **`ON DELETE CASCADE`** when a parent `WatchedFile` is deleted.
+3. **`alert_events` ([`AlertEvent.java`](../src/main/java/com/hashwatch/entity/AlertEvent.java))**: Audit trail of integrity violations. Foreign key `fk_alert_watched_file` enforces **`ON DELETE SET NULL`** so historical security alerts and their `file_path` snapshots survive even if a monitored file record is later deleted.
+
+### 4.4. Automated `@DataJpaTest` Verification ([`RepositoryIntegrationTest.java`](../src/test/java/com/hashwatch/repository/RepositoryIntegrationTest.java))
+8 integration tests validate the persistence layer:
+1. `testSaveAndQueryWatchedFile` — `@PrePersist` defaults and active/status queries.
+2. `testAllEnumValuesMapToDatabaseStrings` — Persists and retrieves all 5 `FileStatus` values and all $4 \times 4 = 16$ `EventType` $\times$ `AlertSeverity` combinations, verifying exact `VARCHAR` representations in the database.
+3. `testSchemaMigrationAndRowsMissingStatusDefaultToUntracked` — Verifies pre-existing rows missing `status` default to `FileStatus.UNTRACKED`.
+4. `testUniqueFilePathConstraint` — Verifies `DataIntegrityViolationException` on duplicate `file_path`.
+5. `testBaselineRotationAndLookup` — Verifies baseline creation, retirement (`is_current = false`), and historical ordering.
+6. `testAlertEventPersistenceAndTriage` — Verifies alert logging, unresolved queries, and resolution updates.
+7. `testDeleteWatchedFileCascadesToBaselineAndSetsNullOnAlertEvent` — Verifies `ON DELETE CASCADE` on `baseline_entries` and `ON DELETE SET NULL` on `alert_events`.
+8. `testAlertEventCreationWithNullWatchedFileReference` — Verifies detached `AlertEvent` persistence with `watched_file_id = NULL`.
 
 *(See [`docs/ERD.md`](ERD.md) for full SQL definitions and Mermaid entity schemas).*
 
