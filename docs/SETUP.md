@@ -8,10 +8,10 @@ Welcome to HashWatch! Follow this guide to set up your local development environ
 
 Ensure you have the following installed:
 - **Java Development Kit (JDK):** Version 17 or higher (Eclipse Temurin / OpenJDK 17 recommended).
-- **Maven:** 3.8+ (or use the provided Maven commands).
+- **Maven:** *Optional!* This repository bundles the **Apache Maven Wrapper** (`mvnw.cmd` for Windows, `./mvnw` for Linux/macOS), which automatically downloads and uses Maven 3.9.9.
 - **Git:** 2.30+.
 - **Python:** 3.10+ (for `python-analysis/` benchmarking suite).
-- **Docker & Docker Compose (Optional but recommended):** For running PostgreSQL locally.
+- **Docker & Docker Compose (Optional):** For running PostgreSQL 16 locally.
 
 Check versions:
 ```bash
@@ -38,44 +38,46 @@ git --version
 
 ---
 
-## 3. Database Setup
+## 3. Database Profiles & HikariCP Connection Pooling (Sprint 1: S1-T1)
 
-### Option A: Instant Development Mode (H2 Database)
-If you do not have Docker or PostgreSQL installed, you can run immediately using the in-memory H2 database:
-```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=h2
+HashWatch uses a dual-profile database setup with **HikariCP** (`HashWatchHikariPool`, max pool size `10`, min idle `2`):
+
+### Option A: Default Zero-Setup Mode (`h2` Profile)
+By default, [`application.properties`](../src/main/resources/application.properties) activates the `h2` profile ([`application-h2.properties`](../src/main/resources/application-h2.properties)) so you can run tests or launch the server immediately without installing PostgreSQL or Docker:
+```powershell
+# Windows (PowerShell / CMD)
+.\mvnw.cmd spring-boot:run
+
+# Linux / macOS
+./mvnw spring-boot:run
 ```
-- No database installation required.
-- H2 Web Console accessible at: `http://localhost:8080/h2-console`
-  - JDBC URL: `jdbc:h2:mem:hashwatch_db`
-  - User: `sa`, Password: (empty)
+- **H2 Web Console:** `http://localhost:8080/h2-console`
+  - **JDBC URL:** `jdbc:h2:mem:hashwatch_db`
+  - **User:** `sa` | **Password:** *(leave empty)*
 
-### Option B: PostgreSQL with Docker Compose (Recommended)
-To run with real PostgreSQL:
-```bash
+### Option B: Production Mode (`postgres` Profile via Docker Compose)
+To run against PostgreSQL 16 ([`application-postgres.properties`](../src/main/resources/application-postgres.properties)):
+```powershell
 docker compose up -d
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=postgres
 ```
-This spins up PostgreSQL on `localhost:5432` with credentials:
-- **DB:** `hashwatch_db`
-- **User:** `hashwatch`
-- **Password:** `hashwatch_secret`
+- **Database:** `hashwatch_db` (`localhost:5432`)
+- **User:** `hashwatch` | **Password:** `hashwatch_secret`
 
 ---
 
-## 4. Building and Running the Application
+## 4. Building and Running Tests
 
-### Running Tests
-Execute the unit and integration tests:
-```bash
-mvn test
+### Run Automated JUnit & `@DataJpaTest` Suite
+```powershell
+# Windows
+.\mvnw.cmd test
+
+# Linux / macOS
+./mvnw test
 ```
 
-### Running the Server
-```bash
-mvn spring-boot:run
-```
-
-Once started, open your browser:
+Once the server is started, open your browser:
 - **Web Dashboard:** [http://localhost:8080](http://localhost:8080)
 - **Security Alerts:** [http://localhost:8080/alerts](http://localhost:8080/alerts)
 - **REST Endpoints:** [http://localhost:8080/api/files](http://localhost:8080/api/files)
