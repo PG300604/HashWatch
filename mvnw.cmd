@@ -1,6 +1,7 @@
 <# : batch portion
 @REM ----------------------------------------------------------------------------
 @REM Apache Maven Wrapper startup batch script, version 3.3.2
+@REM Includes automatic JAVA_HOME validation & recovery after JDK updates
 @REM ----------------------------------------------------------------------------
 
 @echo off
@@ -8,6 +9,14 @@ setlocal
 
 set "WRAPPER_DIR=%~dp0"
 set "WRAPPER_PS1=%WRAPPER_DIR%mvnw.cmd"
+
+@REM Validate JAVA_HOME and auto-recover if a system update upgraded the JDK directory
+if not exist "%JAVA_HOME%\bin\java.exe" (
+    for /f "usebackq tokens=*" %%j in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "$env:RESOLVE_JAVA_HOME='1'; Invoke-Expression $([System.IO.File]::ReadAllText($env:WRAPPER_PS1))"` ) do (
+        set "JAVA_HOME=%%j"
+        set "PATH=%%j\bin;%PATH%"
+    )
+)
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-Expression $([System.IO.File]::ReadAllText($env:WRAPPER_PS1))"
 if errorlevel 1 exit /b 1
@@ -19,6 +28,36 @@ exit /b %ERRORLEVEL%
 : end batch / begin powershell #>
 
 $ErrorActionPreference = "Stop"
+
+if ($env:RESOLVE_JAVA_HOME -eq '1') {
+    $candidates = @(
+        [Environment]::GetEnvironmentVariable("JAVA_HOME", "User"),
+        [Environment]::GetEnvironmentVariable("JAVA_HOME", "Machine")
+    )
+    foreach ($cand in $candidates) {
+        if ($cand) {
+            $trimmed = $cand.TrimEnd('\', '/')
+            if (Test-Path (Join-Path $trimmed "bin\java.exe")) {
+                Write-Output $trimmed
+                exit 0
+            }
+        }
+    }
+    $searchDirs = @("C:\Program Files\Eclipse Adoptium", "C:\Program Files\Java", "C:\Program Files\Microsoft")
+    foreach ($dir in $searchDirs) {
+        if (Test-Path $dir) {
+            $jdks = Get-ChildItem -Path $dir -Directory -Filter "jdk*" | Sort-Object Name -Descending
+            foreach ($jdk in $jdks) {
+                if (Test-Path (Join-Path $jdk.FullName "bin\java.exe")) {
+                    Write-Output $jdk.FullName
+                    exit 0
+                }
+            }
+        }
+    }
+    exit 0
+}
+
 $wrapperDir = $env:WRAPPER_DIR
 $propsFile = Join-Path $wrapperDir ".mvn\wrapper\maven-wrapper.properties"
 $props = Get-Content $propsFile | Where-Object { $_ -match '=' -and -not $_.StartsWith('#') }
