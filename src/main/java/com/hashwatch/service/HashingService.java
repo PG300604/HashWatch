@@ -3,7 +3,12 @@ package com.hashwatch.service;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 
 /**
  * =============================================================================
@@ -32,15 +37,32 @@ public class HashingService {
      *
      * @param file the target file on disk
      * @return 64-character hexadecimal string
-     * @throws IOException on file read failure
+     * @throws IOException on file read failure or if file is invalid
      */
     public String hashFile(File file) throws IOException {
-        // TODO [Sprint 1 - Cryptology]: Assigned to Samarjeet / Priyanshu
-        // 1. Validate that the file exists and is a readable file.
-        // 2. Initialize MessageDigest for "SHA-256".
-        // 3. Read the file through FileInputStream in 64 KB chunks into the digest.
-        // 4. Return the hex formatted digest string.
-        throw new UnsupportedOperationException("TODO: Implement streaming SHA-256 with 64KB buffer in Sprint 1");
+        // Defensive validation: Ensure target exists, is accessible, and is not a directory
+        if (file == null || !file.exists() || !file.isFile()) {
+            throw new IllegalArgumentException("File must exist and be a regular file: " + (file != null ? file.getAbsolutePath() : "null"));
+        }
+
+        try {
+            // SHA-256 standard cryptographic message digest
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            // Process file using a bounded 64 KB buffer to maintain O(1) memory footprint regardless of file size
+            try (FileInputStream fis = new FileInputStream(file)) {
+                byte[] buffer = new byte[BUFFER_SIZE];
+                int bytesRead;
+                while ((bytesRead = fis.read(buffer)) != -1) {
+                    digest.update(buffer, 0, bytesRead);
+                }
+            }
+
+            // Convert raw 32-byte digest into a standard lowercase 64-character hexadecimal representation
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 algorithm not available in current security provider environment", e);
+        }
     }
 
     /**
@@ -50,8 +72,18 @@ public class HashingService {
      * @return 64-character hexadecimal string
      */
     public String hashString(String input) {
-        // TODO [Sprint 1 - Cryptology]: Assigned to Samarjeet / Priyanshu
-        // Implement SHA-256 digest on input UTF-8 bytes and return hex format.
-        throw new UnsupportedOperationException("TODO: Implement hashString in Sprint 1");
+        // Input validation
+        if (input == null) {
+            throw new IllegalArgumentException("Input string cannot be null");
+        }
+
+        try {
+            // Compute digest over standard UTF-8 encoded byte array
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hashBytes);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 algorithm not available in current security provider environment", e);
+        }
     }
 }
