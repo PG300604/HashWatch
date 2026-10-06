@@ -82,6 +82,8 @@ String hexDigest = HexFormat.of().formatHex(digest.digest());
 ```
 - **Time Complexity:** $\mathcal{O}(N)$ where $N$ is file size.
 - **Space Complexity:** $\mathcal{O}(1)$ bounded to 64 KB heap allocation.
+- **Implementation:** [`HashingService.java`](../src/main/java/com/hashwatch/service/HashingService.java) implements `hashFile(File)` and `hashString(String)` with explicit null/existence checks and lowercase 64-char hex outputs.
+- **Test Verification:** [`HashingServiceTest.java`](../src/test/java/com/hashwatch/service/HashingServiceTest.java) validates empty string RFC vector (`e3b0c44...`), file modification sensitivity, and input boundary exception handling (5/5 unit tests passing).
 
 ### 3.2. Ed25519 Digital Signatures (Edwards-curve Digital Signature Algorithm)
 - **Curve:** Curve25519 with Twisted Edwards model ($ -x^2 + y^2 = 1 - \frac{121665}{121666} x^2 y^2 $).

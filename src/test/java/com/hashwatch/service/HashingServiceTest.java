@@ -29,16 +29,15 @@ class HashingServiceTest {
     }
 
     @Test
-    @Disabled("Pending Sprint 1 implementation by Samarjeet / Priyanshu")
     void testHashStringKnownVector() {
-        // SHA-256 of empty string is e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        // Standard NIST/RFC test vector: SHA-256 of empty string is e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
         String hash = hashingService.hashString("");
         assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", hash);
     }
 
     @Test
-    @Disabled("Pending Sprint 1 implementation by Samarjeet / Priyanshu")
     void testHashFileMatchesExpected(@TempDir Path tempDir) throws IOException {
+        // Verify regular file streaming correctly produces a 64-character hex digest
         Path testFile = tempDir.resolve("sample.txt");
         Files.writeString(testFile, "Hello HashWatch File Integrity Monitoring");
 
@@ -48,8 +47,8 @@ class HashingServiceTest {
     }
 
     @Test
-    @Disabled("Pending Sprint 1 implementation by Samarjeet / Priyanshu")
     void testFileModificationChangesHash(@TempDir Path tempDir) throws IOException {
+        // Verify avalanche effect: altering file contents produces a different hash value
         Path testFile = tempDir.resolve("sample.txt");
         Files.writeString(testFile, "Original Content");
         String hash1 = hashingService.hashFile(testFile.toFile());
@@ -58,5 +57,18 @@ class HashingServiceTest {
         String hash2 = hashingService.hashFile(testFile.toFile());
 
         assertNotEquals(hash1, hash2);
+    }
+
+    @Test
+    void testHashFileThrowsOnNullOrNonExistent() {
+        // Verify defensive boundaries for null input and missing file references
+        assertThrows(IllegalArgumentException.class, () -> hashingService.hashFile(null));
+        assertThrows(IllegalArgumentException.class, () -> hashingService.hashFile(new File("non_existent_file_12345.xyz")));
+    }
+
+    @Test
+    void testHashStringThrowsOnNull() {
+        // Verify defensive boundary for null string input
+        assertThrows(IllegalArgumentException.class, () -> hashingService.hashString(null));
     }
 }

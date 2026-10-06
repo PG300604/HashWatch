@@ -73,10 +73,16 @@ ENV/
 env.bak/
 venv.bak/
 .venv/
+python-analysis/venv/
+python-analysis/.venv/
 python-analysis/charts/*.png
 python-analysis/charts/*.svg
 python-analysis/charts/*.pdf
 !python-analysis/charts/.gitkeep
+
+# Obsidian & Markdown tools
+.obsidian/
+docs/.obsidian/
 
 # OS generated files
 .DS_Store
