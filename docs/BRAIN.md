@@ -67,7 +67,7 @@ flowchart TD
     subgraph Sprint1["Sprint 1: Crypto & DB Foundations"]
         S1P["✅ Priyanshu: DevOps & DB (Maven Wrapper, HikariCP, Enums, JPA Indexes, @DataJpaTest)"]
         S1R["⏳ Riya: Cryptology (Ed25519 key gen & sign/verify)"]
-        S1S["⏳ Samarjeet: Cryptology & Backend (SHA-256 streaming)"]
+        S1S["✅ Samarjeet: Cryptology & Backend (SHA-256 streaming)"]
     end
 
     subgraph Sprint2["Sprint 2: Comparison Engine & Scheduler"]

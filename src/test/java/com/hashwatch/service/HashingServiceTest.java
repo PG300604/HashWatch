@@ -1,7 +1,6 @@
 package com.hashwatch.service;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -15,8 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * =============================================================================
  * DOMAIN: Cryptology
- * ASSIGNED TO: Samarjeet / Priyanshu (Sprint 1)
- * Remove @Disabled once HashingService is implemented in Sprint 1.
+ * ASSIGNED TO: Samarjeet / Priyanshu (Sprint 1: S1-T3)
  * =============================================================================
  */
 class HashingServiceTest {
