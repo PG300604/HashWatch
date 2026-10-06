@@ -6,9 +6,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Signature;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 
 /**
  * =============================================================================
@@ -33,6 +44,8 @@ public class SigningService {
 
     private static final Logger log = LoggerFactory.getLogger(SigningService.class);
     private static final String ALGORITHM = "Ed25519";
+    private static final String PRIVATE_KEY_FILENAME = "ed25519_private.key";
+    private static final String PUBLIC_KEY_FILENAME = "ed25519_public.pub";
 
     @Value("${hashwatch.crypto.key-directory:keys/}")
     private String keyDirectoryPath;
@@ -41,20 +54,56 @@ public class SigningService {
 
     @PostConstruct
     public void init() {
-        log.info("Initializing SigningService... (To be implemented in Sprint 1)");
-        // TODO [Sprint 1 - Cryptology]: Assigned to Riya / Priyanshu
-        // Call ensureKeysLoaded() on startup
+        log.info("Initializing SigningService with key directory: {}", keyDirectoryPath);
+        try {
+            ensureKeysLoaded();
+            log.info("Ed25519 digital signing service initialized successfully.");
+        } catch (Exception e) {
+            log.error("Failed to initialize Ed25519 signing keys: {}", e.getMessage(), e);
+            throw new IllegalStateException("Could not initialize Ed25519 keys on startup", e);
+        }
     }
 
     /**
-     * Loads existing Ed25519 keys from disk or generates a fresh keypair.
+     * Loads existing Ed25519 keys from disk or generates a fresh keypair and persists them.
      */
     public synchronized void ensureKeysLoaded() throws Exception {
-        // TODO [Sprint 1 - Cryptology]: Assigned to Riya / Priyanshu
-        // 1. Check if private and public key files exist in keyDirectoryPath.
-        // 2. If present, load and decode them using KeyFactory.getInstance("Ed25519").
-        // 3. If absent, generate a KeyPair using KeyPairGenerator.getInstance("Ed25519") and save Base64 to disk.
-        throw new UnsupportedOperationException("TODO: Implement Ed25519 keypair loading/generation in Sprint 1");
+        if (this.keyPair != null && this.keyPair.getPrivate() != null && this.keyPair.getPublic() != null) {
+            return;
+        }
+
+        Path dir = Paths.get(keyDirectoryPath);
+        if (!Files.exists(dir)) {
+            Files.createDirectories(dir);
+        }
+
+        Path privateKeyFile = dir.resolve(PRIVATE_KEY_FILENAME);
+        Path publicKeyFile = dir.resolve(PUBLIC_KEY_FILENAME);
+
+        if (Files.exists(privateKeyFile) && Files.exists(publicKeyFile)) {
+            log.info("Loading existing Ed25519 keypair from {}", dir.toAbsolutePath());
+            String privateKeyBase64 = Files.readString(privateKeyFile).trim();
+            String publicKeyBase64 = Files.readString(publicKeyFile).trim();
+
+            byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyBase64);
+            byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyBase64);
+
+            KeyFactory keyFactory = KeyFactory.getInstance(ALGORITHM);
+            PrivateKey privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));
+            PublicKey publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+
+            this.keyPair = new KeyPair(publicKey, privateKey);
+        } else {
+            log.info("Generating new Ed25519 keypair and persisting to {}", dir.toAbsolutePath());
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(ALGORITHM);
+            this.keyPair = keyPairGenerator.generateKeyPair();
+
+            String privateKeyBase64 = Base64.getEncoder().encodeToString(this.keyPair.getPrivate().getEncoded());
+            String publicKeyBase64 = Base64.getEncoder().encodeToString(this.keyPair.getPublic().getEncoded());
+
+            Files.writeString(privateKeyFile, privateKeyBase64);
+            Files.writeString(publicKeyFile, publicKeyBase64);
+        }
     }
 
     /**
@@ -64,11 +113,21 @@ public class SigningService {
      * @return Base64-encoded Ed25519 signature
      */
     public String sign(String data) throws GeneralSecurityException {
-        // TODO [Sprint 1 - Cryptology]: Assigned to Riya / Priyanshu
-        // 1. Initialize Signature instance with ALGORITHM "Ed25519".
-        // 2. sign data with keyPair.getPrivate().
-        // 3. Return Base64-encoded signature.
-        throw new UnsupportedOperationException("TODO: Implement sign() in Sprint 1");
+        if (data == null) {
+            throw new IllegalArgumentException("Data to sign cannot be null");
+        }
+        if (keyPair == null || keyPair.getPrivate() == null) {
+            try {
+                ensureKeysLoaded();
+            } catch (Exception e) {
+                throw new GeneralSecurityException("Unable to initialize Ed25519 private key for signing", e);
+            }
+        }
+        Signature signature = Signature.getInstance(ALGORITHM);
+        signature.initSign(keyPair.getPrivate());
+        signature.update(data.getBytes(StandardCharsets.UTF_8));
+        byte[] signedBytes = signature.sign();
+        return Base64.getEncoder().encodeToString(signedBytes);
     }
 
     /**
@@ -79,15 +138,46 @@ public class SigningService {
      * @return true if valid signature; false otherwise
      */
     public boolean verify(String data, String base64Signature) throws GeneralSecurityException {
-        // TODO [Sprint 1 - Cryptology]: Assigned to Riya / Priyanshu
-        // 1. Initialize Signature instance for verification with public key.
-        // 2. Verify decoded bytes of base64Signature.
-        throw new UnsupportedOperationException("TODO: Implement verify() in Sprint 1");
+        if (data == null || base64Signature == null || base64Signature.isBlank()) {
+            return false;
+        }
+        if (keyPair == null || keyPair.getPublic() == null) {
+            try {
+                ensureKeysLoaded();
+            } catch (Exception e) {
+                throw new GeneralSecurityException("Unable to initialize Ed25519 public key for verification", e);
+            }
+        }
+        try {
+            byte[] signatureBytes = Base64.getDecoder().decode(base64Signature.trim());
+            Signature verifier = Signature.getInstance(ALGORITHM);
+            verifier.initVerify(keyPair.getPublic());
+            verifier.update(data.getBytes(StandardCharsets.UTF_8));
+            return verifier.verify(signatureBytes);
+        } catch (IllegalArgumentException e) {
+            log.warn("Malformed Base64 signature encountered during verification: {}", e.getMessage());
+            return false;
+        } catch (GeneralSecurityException e) {
+            log.warn("Cryptographic verification error: {}", e.getMessage());
+            return false;
+        }
     }
 
+    /**
+     * Returns the Base64-encoded X.509 public key string.
+     */
     public String getPublicKeyBase64() {
-        // TODO [Sprint 1 - Cryptology]: Return public key in Base64 string format
-        return (keyPair != null && keyPair.getPublic() != null) ? "PENDING_IMPLEMENTATION" : "";
+        if (keyPair == null || keyPair.getPublic() == null) {
+            try {
+                ensureKeysLoaded();
+            } catch (Exception e) {
+                log.error("Unable to load keys for getPublicKeyBase64: {}", e.getMessage());
+                return "";
+            }
+        }
+        return (keyPair != null && keyPair.getPublic() != null)
+                ? Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded())
+                : "";
     }
 
     public KeyPair getKeyPair() {
