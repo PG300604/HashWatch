@@ -85,12 +85,19 @@ String hexDigest = HexFormat.of().formatHex(digest.digest());
 - **Implementation:** [`HashingService.java`](../src/main/java/com/hashwatch/service/HashingService.java) implements `hashFile(File)` and `hashString(String)` with explicit null/existence checks and lowercase 64-char hex outputs.
 - **Test Verification:** [`HashingServiceTest.java`](../src/test/java/com/hashwatch/service/HashingServiceTest.java) validates empty string RFC vector (`e3b0c44...`), file modification sensitivity, and input boundary exception handling (5/5 unit tests passing).
 
-### 3.2. Ed25519 Digital Signatures (Edwards-curve Digital Signature Algorithm)
+### 3.2. Ed25519 Digital Signatures (Edwards-curve Digital Signature Algorithm) — (Sprint 1: S1-T2)
+- **Implementation:** [`SigningService.java`](../src/main/java/com/hashwatch/service/SigningService.java) utilizing Java 17 LTS native JCA (`SunEC` / JEP 339).
 - **Curve:** Curve25519 with Twisted Edwards model ($ -x^2 + y^2 = 1 - \frac{121665}{121666} x^2 y^2 $).
-- **Key Sizes:** 32-byte public key, 32-byte private key (encoded with standard PKCS#8 / X.509 format).
-- **Signature Size:** Fixed 64 bytes (Base64 encoded string $\approx$ 88 characters).
-- **Security:** 128-bit security level against collision and discrete logarithm attacks; immune to timing side-channel attacks.
-- **Storage:** Key pairs are initialized into `keys/ed25519_private.key` and `keys/ed25519_public.pub`. The private key is excluded in `.gitignore` and never transmitted across the network.
+- **Key Formats & Persistence:**
+  - **Private Key:** Stored at `keys/ed25519_private.key` as Base64-encoded PKCS#8 (`PKCS8EncodedKeySpec`).
+  - **Public Key:** Stored at `keys/ed25519_public.pub` as Base64-encoded X.509 (`X509EncodedKeySpec`).
+  - **Auto-Initialization:** `@PostConstruct` automatically resolves the key directory (configurable via `hashwatch.crypto.key-directory`), creates it if absent, loads existing keys, or generates a fresh 256-bit keypair on initial boot.
+- **Signature Specification:**
+  - **Signature Algorithm:** Standard Ed25519 (RFC 8032) producing raw 64-byte cryptographic signatures encoded in Base64 string format (~86-88 characters).
+  - **Signing:** Computes signature over UTF-8 bytes of SHA-256 digest strings using `Signature.getInstance("Ed25519")`.
+  - **Verification & Tamper Resilience:** Validates signature against provided string data. Gracefully catches null/blank inputs, malformed Base64, and corrupted byte arrays, returning `false` (`SIGNATURE_INVALID`) rather than throwing unhandled runtime exceptions.
+- **Security Guarantee:** 128-bit security level against collision and discrete logarithm attacks; immune to timing side-channel attacks. The private key is excluded in `.gitignore` and never exposed over the REST API.
+- **Verification Suite:** Validated by 5 automated tests in [`SigningServiceTest.java`](../src/test/java/com/hashwatch/service/SigningServiceTest.java) covering genuine signing/verification, tampered digest rejection, cross-instance key persistence reload, and malformed signature handling.
 
 ---
 

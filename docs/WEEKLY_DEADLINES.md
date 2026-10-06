@@ -15,7 +15,7 @@
 
 - [x] **S1-T1 (Priyanshu — DevOps / DBMS):** Bundled Apache Maven Wrapper (`mvnw` / `mvnw.cmd`), `.gitattributes`, HikariCP connection pool (`HashWatchHikariPool`), and dual-profile setup (`h2` default + `postgres`).
 - [x] **S1-T4 (Priyanshu — DBMS):** Implemented strongly-typed enums (`FileStatus`, `EventType`, `AlertSeverity`), JPA `@Index` & `@ColumnDefault` annotations, FK `ON DELETE CASCADE` / `SET NULL` rules, and `RepositoryIntegrationTest` (8/8 passing, including RepoMind edge cases).
-- [ ] **S1-T2 (Riya — Cryptology):** Implement Ed25519 key generation, loading, signing, and verification in `SigningService.java` and pass `SigningServiceTest.java`.
+- [x] **S1-T2 (Riya — Cryptology):** Implement Ed25519 key generation, loading, signing, and verification in `SigningService.java` and pass `SigningServiceTest.java` (5/5 tests passing).
 - [x] **S1-T3 (Samarjeet — Cryptology & Backend):** Implement 64 KB buffered SHA-256 streaming in `HashingService.java` and pass `HashingServiceTest.java` (5/5 tests passing).
 
 > [!IMPORTANT]

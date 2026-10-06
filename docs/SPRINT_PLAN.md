@@ -22,14 +22,22 @@
 | Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **S1-T1** | DevOps / DBMS | Priyanshu | ✅ **Done** | `mvnw`, `mvnw.cmd`, `.gitattributes`, `docker-compose.yml`, `src/main/resources/application*.properties` | Bundle Apache Maven Wrapper (v3.9.9); configure HikariCP connection pool (`HashWatchHikariPool`); setup dual database profiles (`h2` default + `postgres`). | `docs/SETUP.md`, `docs/TRD.md` |
-| **S1-T2** | Cryptology | Riya | ⏳ **Pending (Riya)** | `src/main/java/com/hashwatch/service/SigningService.java`, `src/test/java/.../SigningServiceTest.java` | Implement Ed25519 keypair loading/generation, signing, and verification; enable and pass `SigningServiceTest`. | `docs/TRD.md` (Sec 3.2) |
+| **S1-T2** | Cryptology | Riya | ✅ **Done** | `src/main/java/com/hashwatch/service/SigningService.java`, `src/test/java/.../SigningServiceTest.java` | Implement Ed25519 keypair loading/generation, signing, and verification; enable and pass `SigningServiceTest`. | `docs/TRD.md` (Sec 3.2) |
 | **S1-T3** | Cryptology & Backend | Samarjeet | ✅ **Done** | `src/main/java/com/hashwatch/service/HashingService.java`, `src/test/java/.../HashingServiceTest.java` | Implement 64 KB buffered SHA-256 streaming in `HashingService`; enable and pass `HashingServiceTest`. | `docs/TRD.md` (Sec 3.1) |
 | **S1-T4** | DBMS | Priyanshu | ✅ **Done** | `src/main/java/com/hashwatch/entity/`, `repository/`, `src/test/java/.../RepositoryIntegrationTest.java` | Implement strongly-typed enums (`FileStatus`, `EventType`, `AlertSeverity`), JPA `@Index` & `@ColumnDefault` annotations, FK `CASCADE` / `SET NULL` rules, and 8 `@DataJpaTest` integration tests. | `docs/ERD.md`, `docs/PACKAGE_STRUCTURE.md` |
 
-#### Sprint 1 Completion Summary
-- **Build & DevOps (`S1-T1` - Priyanshu):** Added `mvnw` / `mvnw.cmd` (Maven 3.9.9), `.gitattributes` (enforcing LF on `mvnw`), `application-postgres.properties`, and HikariCP connection pool configuration in `application.properties`.
-- **Cryptology & Backend (`S1-T3` - Samarjeet):** Implemented streaming SHA-256 hashing with 64 KB buffer in `HashingService.java`, `hashString(String input)`, validation against null/missing files, and enabled all 5 unit tests in `HashingServiceTest.java` (all passing).
-- **DBMS & Schema (`S1-T4` - Priyanshu):** Created `FileStatus`, `EventType`, and `AlertSeverity` enums; added JPA `@Index`, `@ColumnDefault`, `@OnDelete(CASCADE / SET_NULL)`, and `@PrePersist` hooks on `WatchedFile`, `BaselineEntry`, and `AlertEvent`; created `RepositoryIntegrationTest.java` (8/8 tests passing, including RepoMind edge cases for enum string mappings, missing `status` migration defaults, FK cascade/set-null, and detached `AlertEvent` creation).
+#### Sprint 1 Completion Summary (100% Complete)
+
+##### 1. DevOps & DBMS (`S1-T1` & `S1-T4` — Priyanshu)
+- **Build & DevOps (`S1-T1`):** Added `mvnw` / `mvnw.cmd` (Maven 3.9.9), `.gitattributes` (enforcing LF on `mvnw`), `application-postgres.properties`, and HikariCP connection pool configuration in `application.properties`.
+- **DBMS & Schema (`S1-T4`):** Created `FileStatus`, `EventType`, and `AlertSeverity` enums; added JPA `@Index`, `@ColumnDefault`, `@OnDelete(CASCADE / SET_NULL)`, and `@PrePersist` hooks on `WatchedFile`, `BaselineEntry`, and `AlertEvent`; created `RepositoryIntegrationTest.java` (8/8 tests passing, including RepoMind edge cases for enum string mappings, missing `status` migration defaults, FK cascade/set-null, and detached `AlertEvent` creation).
+
+##### 2. Cryptology (`S1-T2` — Riya)
+- **Ed25519 Signing & Verification (`S1-T2`):** Implemented asymmetric Edwards-curve digital signature engine in `SigningService.java` using native Java 17 LTS JCA (`SunEC` / JEP 339). Added automatic directory creation, PKCS#8/X.509 Base64 keypair persistence to disk (`keys/ed25519_private.key` and `keys/ed25519_public.pub`), robust UTF-8 payload signing, and tamper-resilient signature verification returning `false` on altered data or malformed signatures without throwing unhandled exceptions.
+- **Unit Test Suite:** Enabled and expanded `SigningServiceTest.java` (5/5 tests passing), covering genuine signature verification, tampered digest rejection, cross-instance key persistence across reload, and malformed signature handling.
+
+##### 3. Cryptology & Backend (`S1-T3` — Samarjeet)
+- **SHA-256 Streaming (`S1-T3`):** Implemented streaming SHA-256 hashing with 64 KB buffer in `HashingService.java`, `hashString(String input)`, validation against null/missing files, and enabled all 5 unit tests in `HashingServiceTest.java` (5/5 tests passing).
 
 ---
 

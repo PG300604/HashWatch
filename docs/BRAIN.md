@@ -66,7 +66,7 @@ HashWatch is designed from the ground up as a shared team effort. To avoid situa
 flowchart TD
     subgraph Sprint1["Sprint 1: Crypto & DB Foundations"]
         S1P["✅ Priyanshu: DevOps & DB (Maven Wrapper, HikariCP, Enums, JPA Indexes, @DataJpaTest)"]
-        S1R["⏳ Riya: Cryptology (Ed25519 key gen & sign/verify)"]
+        S1R["✅ Riya: Cryptology (Ed25519 key gen & sign/verify)"]
         S1S["✅ Samarjeet: Cryptology & Backend (SHA-256 streaming)"]
     end
 
