@@ -20,6 +20,7 @@ public class SchedulerConfig {
                 .withIdentity("fileMonitoringJob", "integrityGroup")
                 .withDescription("Scheduled file integrity verification job")
                 .storeDurably()
+                .requestRecovery(false)
                 .build();
     }
 
@@ -28,10 +29,11 @@ public class SchedulerConfig {
         return TriggerBuilder.newTrigger()
                 .forJob(monitoringJobDetail)
                 .withIdentity("fileMonitoringTrigger", "integrityGroup")
-                .withDescription("Trigger for file integrity verification")
+                .withDescription("Trigger for periodic file integrity verification")
                 .withSchedule(SimpleScheduleBuilder.simpleSchedule()
                         .withIntervalInSeconds(scanIntervalSeconds)
-                        .repeatForever())
+                        .repeatForever()
+                        .withMisfireHandlingInstructionNextWithExistingCount())
                 .build();
     }
 }

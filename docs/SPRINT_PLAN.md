@@ -44,11 +44,19 @@
 ### Sprint 2: Core Integrity Engine & Scheduled Monitoring
 **Focus:** Backend, DBMS, Cryptology.
 
-| Task ID | Domain | Assigned To | Folder / Target Files | Task Description | Doc Update Required |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **S2-T1** | Backend | Priyanshu | `src/main/java/com/hashwatch/service/ComparisonService.java` | Implement `establishBaseline()` and `verifyFile()` logic with status state machine. | `docs/DFD.md` (Level 2) |
-| **S2-T2** | Backend | Samarjeet | `src/main/java/com/hashwatch/scheduler/MonitoringJob.java`, `config/SchedulerConfig.java` | Quartz trigger execution loop; handle job exceptions and scan timeouts. | `docs/TRD.md` (Scheduler) |
-| **S2-T3** | DBMS & API | Riya | `src/main/java/com/hashwatch/repository/`, `entity/AlertEvent.java` | Implement alert queries (unresolved alerts, severity filters) and persistence tests. | `docs/ERD.md` (Table 3.3) |
+| Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **S2-T1** | Backend | Priyanshu | ⏳ **In Progress** | `src/main/java/com/hashwatch/service/ComparisonService.java` | Implement `establishBaseline()` and `verifyFile()` logic with status state machine. | `docs/DFD.md` (Level 2) |
+| **S2-T2** | Backend | Samarjeet | ✅ **Done** | `src/main/java/com/hashwatch/scheduler/MonitoringJob.java`, `config/SchedulerConfig.java` | Quartz trigger execution loop; handle job exceptions and scan timeouts. | `docs/TRD.md` (Section 2.1) |
+| **S2-T3** | DBMS & API | Riya | ⏳ **In Progress** | `src/main/java/com/hashwatch/repository/`, `entity/AlertEvent.java` | Implement alert queries (unresolved alerts, severity filters) and persistence tests. | `docs/ERD.md` (Table 3.3) |
+
+#### Sprint 2 Completion Summary (Samarjeet's Task: `S2-T2`)
+- **Quartz Scheduling & Resilient Monitoring (`S2-T2` — Samarjeet):**
+  - Implemented execution loop in `MonitoringJob.java` calling `comparisonService.runVerificationScan()` with execution time telemetry.
+  - Added `@DisallowConcurrentExecution` to prevent race conditions or overlapping scan jobs on slow/large storage.
+  - Built an exception boundary in `MonitoringJob` catching uncaught runtime/I/O exceptions, logging detailed diagnostics, and setting `setRefireImmediately(false)` to prevent tight retry storms.
+  - Tuned `SchedulerConfig.java` with `withMisfireHandlingInstructionNextWithExistingCount()`, durable job identity, and recovery configuration.
+  - Authored comprehensive test suite `MonitoringJobTest.java` (3/3 passing), bringing total automated test suite to 22/22 tests passing with zero failures.
 
 ---
 
