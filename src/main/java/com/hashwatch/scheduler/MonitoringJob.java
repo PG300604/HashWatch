@@ -11,14 +11,21 @@ import org.springframework.stereotype.Component;
 
 /**
  * =============================================================================
- * DOMAIN: Backend
- * ASSIGNED TO: Samarjeet (Sprint 2)
+ * DOMAIN: Backend / Scheduler
+ * ASSIGNED TO: Samarjeet (Sprint 2: S2-T2)
  * FOLDER / TARGET: src/main/java/com/hashwatch/scheduler/MonitoringJob.java
- * DOC TO UPDATE: docs/TRD.md (Section 1 & 2)
+ * DOC TO UPDATE: docs/TRD.md (Section 2.1)
  * =============================================================================
  *
- * Task Description:
  * Quartz Job triggered periodically to execute file integrity verification scans.
+ *
+ * Resilience & Concurrency Features:
+ * 1. @DisallowConcurrentExecution ensures that if a scan takes longer than the
+ *    configured interval (e.g. large file sets or slow I/O), subsequent trigger
+ *    firings will wait until the active scan completes rather than running in parallel.
+ * 2. High-precision execution duration logging for operational telemetry.
+ * 3. Catches and logs all unhandled exceptions, wrapping them into JobExecutionException
+ *    with setRefireImmediately(false) to prevent runaway failure loops.
  */
 @Component
 @DisallowConcurrentExecution
@@ -28,10 +35,21 @@ public class MonitoringJob implements Job {
 
     private final ComparisonService comparisonService;
 
+    /**
+     * Constructs the monitoring job with the required comparison service dependency.
+     *
+     * @param comparisonService the core integrity verification engine
+     */
     public MonitoringJob(ComparisonService comparisonService) {
         this.comparisonService = comparisonService;
     }
 
+    /**
+     * Executes the periodic file verification scan.
+     *
+     * @param context the Quartz execution context
+     * @throws JobExecutionException if an unrecoverable failure occurs during execution
+     */
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         log.info("Quartz MonitoringJob firing: executing scheduled file integrity verification scan");
