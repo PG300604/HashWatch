@@ -23,8 +23,8 @@
 ## Sprint 2 Task Status Checklist
 
 - [x] **S2-T1 (Priyanshu — Backend):** Implemented `ComparisonService.java` with Triple-Lock canonical envelope (`HashWatch:v1:<path>:<hash>:<size>`), fingerprint-pinned Ed25519 verification in `SigningService.java`, 5-state integrity machine (`UNTRACKED`, `VERIFIED`, `TAMPERED`, `MISSING`, `SIGNATURE_INVALID`), and alert deduplication. All 10 tests in `ComparisonServiceTest.java` passing.
-- [ ] **S2-T2 (Samarjeet — Backend):** Implement Quartz trigger loop in `MonitoringJob.java` & `SchedulerConfig.java`.
-- [ ] **S2-T3 (Riya — DBMS & API):** Implement alert queries and persistence tests in `AlertEventRepository.java`.
+- [x] **S2-T2 (Samarjeet — Backend):** Implement Quartz trigger execution loop, scan timeout handling, and exception resilience in `MonitoringJob.java` & `SchedulerConfig.java` (3/3 tests passing).
+- [ ] **S2-T3 (Riya — DBMS & API):** Implement alert queries (unresolved alerts, severity filters) in `AlertEventRepository` and persistence tests.
 
 > [!IMPORTANT]
 > All Pull Requests for the sprint must be submitted by **Saturday 18:00 IST** to allow review and resolution before the Sunday cutoff.
