@@ -44,11 +44,21 @@
 ### Sprint 2: Core Integrity Engine & Scheduled Monitoring
 **Focus:** Backend, DBMS, Cryptology.
 
-| Task ID | Domain | Assigned To | Folder / Target Files | Task Description | Doc Update Required |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **S2-T1** | Backend | Priyanshu | `src/main/java/com/hashwatch/service/ComparisonService.java` | Implement `establishBaseline()` and `verifyFile()` logic with status state machine. | `docs/DFD.md` (Level 2) |
-| **S2-T2** | Backend | Samarjeet | `src/main/java/com/hashwatch/scheduler/MonitoringJob.java`, `config/SchedulerConfig.java` | Quartz trigger execution loop; handle job exceptions and scan timeouts. | `docs/TRD.md` (Scheduler) |
-| **S2-T3** | DBMS & API | Riya | `src/main/java/com/hashwatch/repository/`, `entity/AlertEvent.java` | Implement alert queries (unresolved alerts, severity filters) and persistence tests. | `docs/ERD.md` (Table 3.3) |
+| Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| **S2-T1** | Backend | Priyanshu | ✅ **Done** | `src/main/java/com/hashwatch/service/ComparisonService.java`, `src/test/java/.../ComparisonServiceTest.java` | Implement `establishBaseline()`, `verifyFile()`, Triple-Lock canonical envelope, fingerprint-pinned verification, 5-state integrity machine, and alert deduplication. | `docs/DFD.md` (Level 2), `docs/TRD.md` |
+| **S2-T2** | Backend | Samarjeet | ⏳ Todo | `src/main/java/com/hashwatch/scheduler/MonitoringJob.java`, `config/SchedulerConfig.java` | Quartz trigger execution loop; handle job exceptions and scan timeouts. | `docs/TRD.md` (Scheduler) |
+| **S2-T3** | DBMS & API | Riya | ⏳ Todo | `src/main/java/com/hashwatch/repository/`, `entity/AlertEvent.java` | Implement alert queries (unresolved alerts, severity filters) and persistence tests. | `docs/ERD.md` (Table 3.3) |
+
+#### Sprint 2 Progress Summary
+
+##### 1. Core Verification Engine (`S2-T1` — Priyanshu)
+- **Triple-Lock Canonical Envelope:** Implemented domain-separated, path-normalized, size-bound envelope (`HashWatch:v1:<normalizedPath>:<sha256Hex>:<fileSizeBytes>`) preventing cross-file signature swaps and length collisions.
+- **Fingerprint-Pinned Verification:** Added `getKeyFingerprint()` (SHA-256 hex digest of X.509 public key) and overloaded `verify(data, signature, expectedPublicKeyId)` to detect rogue key substitution attacks.
+- **5-State Integrity Machine:** Enforces deterministic transitions between `UNTRACKED`, `VERIFIED`, `TAMPERED`, `MISSING`, and `SIGNATURE_INVALID`.
+- **State-Transition Alert Gating:** Prevents 30-second polling alert fatigue by checking existing unresolved alerts before generating new `AlertEvent` entries.
+- **Batch Verification Fault Isolation:** Wrapped scan loop in per-file exception handlers so transient I/O or locked files never fail the rest of the batch.
+- **Test Suite:** Added 10 automated unit tests in `ComparisonServiceTest.java` (all 30 tests in project passing).
 
 ---
 
