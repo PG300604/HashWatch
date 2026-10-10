@@ -58,7 +58,7 @@ flowchart TD
 
 ## 3. Level 2: Sub-Process Breakdown
 
-### 3.1. Process 1.0 — Baseline Establishment Detail
+### 3.1. Process 1.0 — Baseline Establishment Detail (Sprint 2: S2-T1)
 ```mermaid
 sequenceDiagram
     autonumber
@@ -73,15 +73,19 @@ sequenceDiagram
     FC->>CS: establishBaseline(watchedFile)
     CS->>HS: hashFile(diskFile)
     HS-->>CS: SHA-256 digest string
-    CS->>SS: sign(SHA-256 digest)
+    Note over CS: Build Triple-Lock Canonical Envelope:<br/>HashWatch:v1:<path>:<sha256>:<size>
+    CS->>SS: sign(canonicalPayload)
     SS-->>CS: Base64 Ed25519 signature
-    CS->>DB: INSERT INTO baseline_entries (hash, signature, is_current=true)
-    CS->>DB: UPDATE watched_files SET status='VERIFIED'
+    CS->>SS: getKeyFingerprint()
+    SS-->>CS: SHA-256 public key fingerprint (publicKeyId)
+    CS->>DB: UPDATE baseline_entries SET is_current=false WHERE watched_file_id=?
+    CS->>DB: INSERT INTO baseline_entries (hash, signature, public_key_id, is_current=true)
+    CS->>DB: UPDATE watched_files SET status='VERIFIED', file_size=?, last_modified=?
     CS-->>FC: Baseline established
     FC-->>Admin: 200 OK (WatchedFile + Baseline details)
 ```
 
-### 3.2. Process 2.0 — Scheduled Verification Loop Detail
+### 3.2. Process 2.0 — Scheduled Verification Loop Detail (Sprint 2: S2-T1)
 ```mermaid
 sequenceDiagram
     autonumber
@@ -95,18 +99,25 @@ sequenceDiagram
     QZ->>MJ: execute()
     MJ->>CS: runVerificationScan()
     CS->>DB: SELECT * FROM watched_files WHERE is_active=true
-    loop For Each Monitored File
+    loop For Each Monitored File (Isolated Try-Catch)
         CS->>DB: SELECT active baseline_entry
-        CS->>SS: verify(baseline.sha256, baseline.signature)
-        alt Signature Invalid
-            CS->>DB: INSERT INTO alert_events (SIGNATURE_INVALID, CRITICAL)
-        else Signature Valid
-            CS->>HS: hashFile(diskFile)
-            alt Hash Matches Baseline
-                CS->>DB: UPDATE watched_files SET status='VERIFIED'
-            else Hash Mismatch
-                CS->>DB: UPDATE watched_files SET status='TAMPERED'
-                CS->>DB: INSERT INTO alert_events (UNAUTHORIZED_MODIFICATION, CRITICAL)
+        Note over CS: Rebuild Expected Triple-Lock Envelope:<br/>HashWatch:v1:<path>:<sha256>:<size>
+        CS->>SS: verify(payload, signature, baseline.publicKeyId)
+        alt Public Key Fingerprint Mismatch OR Invalid Ed25519 Sig
+            CS->>DB: UPDATE watched_files SET status='SIGNATURE_INVALID'
+            CS->>DB: INSERT INTO alert_events (SIGNATURE_INVALID, CRITICAL) [Deduplicated]
+        else Signature & Fingerprint Valid (Zero-Trust Verified)
+            alt File Missing on Disk
+                CS->>DB: UPDATE watched_files SET status='MISSING'
+                CS->>DB: INSERT INTO alert_events (MISSING_FILE, CRITICAL) [Deduplicated]
+            else File Exists
+                CS->>HS: hashFile(diskFile)
+                alt Hash Matches Baseline
+                    CS->>DB: UPDATE watched_files SET status='VERIFIED', last_checked_at=NOW()
+                else Hash Mismatch
+                    CS->>DB: UPDATE watched_files SET status='TAMPERED'
+                    CS->>DB: INSERT INTO alert_events (UNAUTHORIZED_MODIFICATION, HIGH) [Deduplicated]
+                end
             end
         end
     end

@@ -58,6 +58,11 @@ HashWatch is designed from the ground up as a shared team effort. To avoid situa
 - **Decision:** Bundled `only-script` Maven Wrapper scripts (`mvnw.cmd` and `mvnw` with `.gitattributes` enforcing `eol=lf` and `+x` permissions) that auto-download Maven 3.9.9 into `~/.m2/wrapper/dists`.
 - **Consequence:** Every developer and CI runner builds with the exact same Maven 3.9.9 binary out of the box.
 
+### ADR-008: Triple-Lock Canonical Envelope & Fingerprint-Pinned Verification (Sprint 2: S2-T1)
+- **Context:** Signing raw hashes leaves systems vulnerable to database cut-and-paste attacks (swapping rows between files), and key substitution attacks in RAM/database.
+- **Decision:** Built a canonical envelope (`HashWatch:v1:<normalizedPath>:<sha256Hex>:<fileSizeBytes>`), pinned the SHA-256 public key fingerprint (`publicKeyId`) in `SigningService.getKeyFingerprint()`, enforced 5-state transitions, and added state-transition alert gating.
+- **Consequence:** Prevents replay attacks across files and versions, rejects rogue keys, eliminates 30s alert fatigue, and passed all 10 unit tests in `ComparisonServiceTest.java`.
+
 ---
 
 ## 3. Team Domains & Weekly Sprint Assignments
@@ -71,7 +76,7 @@ flowchart TD
     end
 
     subgraph Sprint2["Sprint 2: Comparison Engine & Scheduler"]
-        S2P["Priyanshu: Backend (ComparisonService state machine)"]
+        S2P["✅ Priyanshu: Backend (ComparisonService Triple-Lock & Fingerprint Pinned)"]
         S2S["Samarjeet: Backend (Quartz MonitoringJob loop)"]
         S2R["Riya: DBMS & API (AlertEvent queries & triage logic)"]
     end

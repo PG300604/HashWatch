@@ -106,4 +106,26 @@ class SigningServiceTest {
         assertNotNull(signingService.getKeyPair().getPublic());
         assertNotNull(signingService.getKeyPair().getPrivate());
     }
+
+    @Test
+    void testKeyFingerprintAndPinnedVerification() throws Exception {
+        signingService.ensureKeysLoaded();
+        String fingerprint = signingService.getKeyFingerprint();
+
+        assertNotNull(fingerprint);
+        assertEquals(64, fingerprint.length(), "SHA-256 fingerprint hex string must be exactly 64 characters");
+
+        String testData = "HashWatch:v1:test/file.txt:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855:1024";
+        String signature = signingService.sign(testData);
+
+        // Verification with matching pinned fingerprint should succeed
+        assertTrue(signingService.verify(testData, signature, fingerprint));
+
+        // Verification with rogue/mismatched fingerprint should fail
+        String rogueFingerprint = "0000000000000000000000000000000000000000000000000000000000000000";
+        assertFalse(signingService.verify(testData, signature, rogueFingerprint),
+                "Pinned verification must fail when public key fingerprint does not match");
+        assertFalse(signingService.verify(testData, signature, null),
+                "Pinned verification must fail when expected public key ID is null");
+    }
 }

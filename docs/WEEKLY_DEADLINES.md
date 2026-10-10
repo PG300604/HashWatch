@@ -22,7 +22,7 @@
 
 ## Sprint 2 Task Status Checklist
 
-- [ ] **S2-T1 (Priyanshu — Backend):** Implement `establishBaseline()` and `verifyFile()` logic with status state machine in `ComparisonService.java`.
+- [x] **S2-T1 (Priyanshu — Backend):** Implemented `ComparisonService.java` with Triple-Lock canonical envelope (`HashWatch:v1:<path>:<hash>:<size>`), fingerprint-pinned Ed25519 verification in `SigningService.java`, 5-state integrity machine (`UNTRACKED`, `VERIFIED`, `TAMPERED`, `MISSING`, `SIGNATURE_INVALID`), and alert deduplication. All 10 tests in `ComparisonServiceTest.java` passing.
 - [x] **S2-T2 (Samarjeet — Backend):** Implement Quartz trigger execution loop, scan timeout handling, and exception resilience in `MonitoringJob.java` & `SchedulerConfig.java` (3/3 tests passing).
 - [ ] **S2-T3 (Riya — DBMS & API):** Implement alert queries (unresolved alerts, severity filters) in `AlertEventRepository` and persistence tests.
 
