@@ -14,6 +14,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -160,6 +161,62 @@ public class SigningService {
         } catch (GeneralSecurityException e) {
             log.warn("Cryptographic verification error: {}", e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Verifies data against a signature using the public key and asserts that
+     * the signature was produced under the expected public key fingerprint.
+     *
+     * @param data original hash/canonical payload data
+     * @param base64Signature Base64-encoded signature
+     * @param expectedPublicKeyId expected SHA-256 fingerprint of the public key
+     * @return true if valid signature and key matches pinned fingerprint; false otherwise
+     */
+    public boolean verify(String data, String base64Signature, String expectedPublicKeyId) throws GeneralSecurityException {
+        if (expectedPublicKeyId == null || expectedPublicKeyId.isBlank()) {
+            log.warn("Missing expectedPublicKeyId during verification");
+            return false;
+        }
+        String currentFingerprint = getKeyFingerprint();
+        if (!currentFingerprint.equalsIgnoreCase(expectedPublicKeyId.trim())) {
+            log.warn("Public key fingerprint mismatch! Expected: {}, Current: {}", expectedPublicKeyId, currentFingerprint);
+            return false;
+        }
+        return verify(data, base64Signature);
+    }
+
+    /**
+     * Returns the SHA-256 hex fingerprint of the active public key.
+     * This acts as the immutable publicKeyId stored in BaselineEntry.
+     */
+    public String getKeyFingerprint() {
+        if (keyPair == null || keyPair.getPublic() == null) {
+            try {
+                ensureKeysLoaded();
+            } catch (Exception e) {
+                log.error("Unable to load keys for getKeyFingerprint: {}", e.getMessage());
+                return "UNKNOWN";
+            }
+        }
+        if (keyPair == null || keyPair.getPublic() == null) {
+            return "UNKNOWN";
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(keyPair.getPublic().getEncoded());
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (GeneralSecurityException e) {
+            log.error("Failed to compute public key fingerprint: {}", e.getMessage());
+            return "UNKNOWN";
         }
     }
 
