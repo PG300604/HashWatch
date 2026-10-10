@@ -18,5 +18,13 @@
 - [x] **S1-T2 (Riya — Cryptology):** Implement Ed25519 key generation, loading, signing, and verification in `SigningService.java` and pass `SigningServiceTest.java` (5/5 tests passing).
 - [x] **S1-T3 (Samarjeet — Cryptology & Backend):** Implement 64 KB buffered SHA-256 streaming in `HashingService.java` and pass `HashingServiceTest.java` (5/5 tests passing).
 
+---
+
+## Sprint 2 Task Status Checklist
+
+- [ ] **S2-T1 (Priyanshu — Backend):** Implement `establishBaseline()` and `verifyFile()` logic with status state machine in `ComparisonService.java`.
+- [x] **S2-T2 (Samarjeet — Backend):** Implement Quartz trigger execution loop, scan timeout handling, and exception resilience in `MonitoringJob.java` & `SchedulerConfig.java` (3/3 tests passing).
+- [ ] **S2-T3 (Riya — DBMS & API):** Implement alert queries (unresolved alerts, severity filters) in `AlertEventRepository` and persistence tests.
+
 > [!IMPORTANT]
 > All Pull Requests for the sprint must be submitted by **Saturday 18:00 IST** to allow review and resolution before the Sunday cutoff.

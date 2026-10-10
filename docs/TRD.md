@@ -63,6 +63,18 @@ flowchart TB
 | **Frontend** | Thymeleaf + CSS/JS | 3.x | Zero-node build step, server-side rendered, lightweight, high performance. |
 | **Analysis** | Python + Matplotlib + NumPy | 3.12+ | Rich statistical packages for CDF/PDF latency plotting and research comparison. |
 
+### 2.1. Quartz Scheduler & Resilient Periodic Monitoring (Sprint 2: S2-T2)
+The background monitoring heartbeat is orchestrated using Spring Boot Quartz:
+- **`MonitoringJob` ([`MonitoringJob.java`](../src/main/java/com/hashwatch/scheduler/MonitoringJob.java)):**
+  - Annotated with `@DisallowConcurrentExecution` to prevent overlapping scan runs when monitoring large directories or high-latency file systems.
+  - Automatically times scan executions and logs duration.
+  - Exception barrier catches I/O and runtime errors, re-wrapping them into `JobExecutionException` with `setRefireImmediately(false)` to prevent tight failure loops while preserving scheduler health.
+- **`SchedulerConfig` ([`SchedulerConfig.java`](../src/main/java/com/hashwatch/config/SchedulerConfig.java)):**
+  - Driven by properties `hashwatch.monitor.scan-interval-seconds` (default: 30s) and `hashwatch.monitor.scan-enabled` (default: true).
+  - Configures durable job detail (`fileMonitoringJob`, group `integrityGroup`) and trigger (`fileMonitoringTrigger`).
+  - Misfire policy configured with `withMisfireHandlingInstructionNextWithExistingCount()` ensuring timely recovery without bursting accumulated missed executions.
+- **Unit Testing:** [`MonitoringJobTest.java`](../src/test/java/com/hashwatch/scheduler/MonitoringJobTest.java) verifies invocation delegation, error containment without immediate refires, and configuration beans (3/3 unit tests passing).
+
 ---
 
 ## 3. Cryptographic Implementation Details
