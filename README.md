@@ -227,9 +227,9 @@ For in-depth architectural specifications, research literature comparisons, and 
 
 **HashWatch** is developed by **Group 3**, Department of Computer Science and Business Systems (**CSBS**), **Asansol Engineering College**:
 
-* **Priyanshu Ghosh** ([`@PG300604`](https://github.com/PG300604)) — *Project Lead, Backend, DBMS, DevOps, Cryptology*
+* **Priyanshu Ghosh** ([`@PG300604`](https://github.com/PG300604)) — *Project Lead, Backend, DBMS, DevOps, Performance Analysis, Cryptology*
 * **Riya** ([`@riyaaa0710`](https://github.com/riyaaa0710)) — *Cryptology, REST API, Frontend, DBMS*
-* **Samarjeet Kumar** ([`@samarjeet-kr`](https://github.com/samarjeet-kr)) — *Backend, Cryptology, Performance Analysis*
+* **Samarjeet Kumar** ([`@samarjeet-kr`](https://github.com/samarjeet-kr)) — *Backend, Cryptology*
 
 ---
 

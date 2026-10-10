@@ -11,9 +11,9 @@ Our project uses **Event-Based Agile Development**. Work is distributed in weekl
 
 | Member | GitHub Handle | Primary Assigned Domains | Key Responsibilities |
 | :--- | :--- | :--- | :--- |
-| **Priyanshu** *(Lead)* | [`@PG300604`](https://github.com/PG300604) | **Backend**, **DBMS**, **DevOps**, **Analysis**, **Cryptology** | Comparison engine, Maven build/wrapper, HikariCP, JPA schema, benchmarking suite. |
+| **Priyanshu** *(Lead)* | [`@PG300604`](https://github.com/PG300604) | **Backend**, **DBMS**, **DevOps**, **Analysis**, **Cryptology** | Comparison engine, Maven build/wrapper, HikariCP, JPA schema, benchmarking & analysis suite. |
 | **Riya** | [`@riyaaa0710`](https://github.com/riyaaa0710) | **Cryptology**, **API**, **Frontend**, **DBMS** | Ed25519 key persistence, REST controllers, Thymeleaf UI, alert triage queries. |
-| **Samarjeet** | [`@samarjeet-kr`](https://github.com/samarjeet-kr) | **Backend**, **Cryptology**, **Analysis** | SHA-256 64 KB streaming, Quartz background scheduler, latency distributions. |
+| **Samarjeet** | [`@samarjeet-kr`](https://github.com/samarjeet-kr) | **Backend**, **Cryptology** | SHA-256 64 KB streaming, Quartz background scheduler, exception resilience. |
 
 ---
 
