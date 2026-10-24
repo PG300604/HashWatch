@@ -24,7 +24,16 @@
 
 - [x] **S2-T1 (Priyanshu — Backend):** Implemented `ComparisonService.java` with Triple-Lock canonical envelope (`HashWatch:v1:<path>:<hash>:<size>`), fingerprint-pinned Ed25519 verification in `SigningService.java`, 5-state integrity machine (`UNTRACKED`, `VERIFIED`, `TAMPERED`, `MISSING`, `SIGNATURE_INVALID`), and alert deduplication. All 10 tests in `ComparisonServiceTest.java` passing.
 - [x] **S2-T2 (Samarjeet — Backend):** Implement Quartz trigger execution loop, scan timeout handling, and exception resilience in `MonitoringJob.java` & `SchedulerConfig.java` (3/3 tests passing).
-- [ ] **S2-T3 (Riya — DBMS & API):** Implement alert queries (unresolved alerts, severity filters) in `AlertEventRepository` and persistence tests.
+- [x] **S2-T3 (Riya — DBMS & API):** Implement alert queries (unresolved alerts, severity filters, pagination) in `AlertEventRepository` and persistence tests in `AlertEventRepositoryTest` (18 tests passing).
+
+---
+
+## Sprint 3 Task Status Checklist
+
+- [x] **S3-T1 (Riya — API):** Implement RESTful endpoints for file registration, listing, and deactivation in `FileController.java`, and baseline inspection, re-baseline triggers, and public key export in `BaselineController.java`. 16 MockMvc integration tests passing in `FileControllerTest` and `BaselineControllerTest`.
+- [x] **SA-5 (Riya — Docs):** Document OpenAPI / REST endpoints contract in `docs/TRD.md` Section 5 covering request/response JSON schemas, query parameters, error responses, and HTTP status codes.
+- [ ] **S3-T2 (Priyanshu — API & Backend):** Implement alert triage endpoints (`/api/alerts`, `/resolve`, `/scan-now`).
+- [ ] **S3-T3 (Samarjeet — Cryptology):** Handle key rotation, PEM/DER encoding, and detached signature validation.
 
 > [!IMPORTANT]
 > All Pull Requests for the sprint must be submitted by **Saturday 18:00 IST** to allow review and resolution before the Sunday cutoff.

@@ -148,37 +148,199 @@ All status and classification fields use Java `enum` types annotated with `@Enum
 
 ---
 
-## 5. REST API Specifications
+## 5. REST API Specifications & OpenAPI Contract (Sprint 3: S3-T1, S3-T2, SA-5)
 
-### Base Path: `/api`
+All REST API endpoints are exposed under base path `/api` with `Content-Type: application/json`. Error responses follow standard JSON error objects with `status`, `error`, and `message` fields.
 
-#### 1. Watched Files
-- **`GET /api/files`**
-  - Response: `200 OK` — List of `WatchedFile` objects.
-- **`POST /api/files`**
-  - Request Body: `{"filePath": "/path/to/file"}`
-  - Response: `200 OK` — Created `WatchedFile` with initial baseline established.
-  - Error: `400 Bad Request` if file path is missing or non-existent on disk.
-- **`DELETE /api/files/{id}`**
-  - Response: `200 OK` — Deactivates file from active monitoring.
+### 5.1. File Management Endpoints (`FileController.java`)
 
-#### 2. Baselines
-- **`GET /api/baselines`**
-  - Response: `200 OK` — List of all active `BaselineEntry` records.
-- **`GET /api/baselines/public-key`**
-  - Response: `200 OK` — `{"algorithm": "Ed25519", "publicKey": "<base64>"}`
-- **`POST /api/baselines/generate/{fileId}`**
-  - Response: `200 OK` — Recomputes SHA-256, resigns with Ed25519, updates active baseline.
-- **`POST /api/baselines/generate-all`**
-  - Response: `200 OK` — Re-baselines all active files.
+#### 1. `GET /api/files` — List Monitored Files
+- **Description:** Returns the inventory of monitored files.
+- **Query Parameters:**
+  - `activeOnly` (optional, boolean, default: `false`): When `true`, filters only files with `is_active = true`.
+- **Response `200 OK`:**
+  ```json
+  [
+    {
+      "id": 1,
+      "filePath": "/etc/nginx/nginx.conf",
+      "fileSize": 2048,
+      "lastModified": "2026-10-24T14:30:00",
+      "status": "VERIFIED",
+      "active": true,
+      "createdAt": "2026-10-24T10:15:00"
+    }
+  ]
+  ```
 
-#### 3. Alerts & Verification
-- **`GET /api/alerts`**
-  - Response: `200 OK` — List of unresolved security alerts.
-- **`POST /api/alerts/{id}/resolve`**
-  - Response: `200 OK` — Marks alert as resolved (`is_resolved = true`).
-- **`POST /api/alerts/scan-now`**
-  - Response: `200 OK` — Triggers an immediate out-of-band verification scan.
+#### 2. `GET /api/files/{id}` — Retrieve Single Monitored File
+- **Description:** Retrieves metadata for a specific watched file by primary key.
+- **Path Parameter:** `id` (Long, required).
+- **Response `200 OK`:** Single `WatchedFile` JSON object.
+- **Response `404 Not Found`:** File ID does not exist.
+
+#### 3. `POST /api/files` — Register File & Establish Initial Baseline
+- **Description:** Registers a new file for integrity monitoring, calculates its streaming SHA-256 hash, builds the Triple-Lock canonical envelope, and generates an Ed25519 digital signature.
+- **Request Headers:** `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "filePath": "/var/log/secure.log"
+  }
+  ```
+- **Response `201 Created`:**
+  ```json
+  {
+    "message": "File successfully registered and initial cryptographic baseline established",
+    "file": {
+      "id": 2,
+      "filePath": "/var/log/secure.log",
+      "fileSize": 4096,
+      "lastModified": "2026-10-24T16:00:00",
+      "status": "VERIFIED",
+      "active": true,
+      "createdAt": "2026-10-24T16:05:00"
+    },
+    "baseline": {
+      "id": 1,
+      "sha256Hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "signature": "dGVzdC1lZDI1NTE5LXNpZ25hdHVyZS1iYXNlNjQ=",
+      "publicKeyId": "b1893608af9cef4d78dd8367d62c05ba364d9d82eb997dd2056b1900775bda1d",
+      "current": true,
+      "createdAt": "2026-10-24T16:05:00"
+    }
+  }
+  ```
+- **Error Responses:**
+  - `400 Bad Request`: Missing `filePath`, empty string, file does not exist on disk, or path is a directory.
+  - `409 Conflict`: File path is already actively watched.
+  - `500 Internal Server Error`: Cryptographic signing or I/O failure.
+
+#### 4. `DELETE /api/files/{id}` — Deactivate Monitored File (Soft Delete)
+- **Description:** Deactivates a file from active scheduled scanning (`is_active = false`). Historical baseline records and alert entries are preserved for audit compliance.
+- **Path Parameter:** `id` (Long, required).
+- **Response `200 OK`:**
+  ```json
+  {
+    "message": "File deactivated from monitoring successfully",
+    "fileId": 1,
+    "active": false
+  }
+  ```
+- **Response `404 Not Found`:** File ID does not exist.
+
+---
+
+### 5.2. Cryptographic Baseline Endpoints (`BaselineController.java`)
+
+#### 1. `GET /api/baselines` — List Active Baselines
+- **Description:** Returns all active cryptographic baselines (`is_current = true`).
+- **Response `200 OK`:**
+  ```json
+  [
+    {
+      "id": 1,
+      "sha256Hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "signature": "dGVzdC1lZDI1NTE5LXNpZ25hdHVyZS1iYXNlNjQ=",
+      "publicKeyId": "b1893608af9cef4d78dd8367d62c05ba364d9d82eb997dd2056b1900775bda1d",
+      "current": true,
+      "createdAt": "2026-10-24T10:15:00"
+    }
+  ]
+  ```
+
+#### 2. `GET /api/baselines/public-key` — Export Ed25519 Public Key
+- **Description:** Exposes the active SunEC Ed25519 public key and SHA-256 fingerprint for detached third-party audit verification.
+- **Response `200 OK`:**
+  ```json
+  {
+    "algorithm": "Ed25519",
+    "format": "X.509 SubjectPublicKeyInfo (Base64)",
+    "publicKey": "MCowBQYDK2VwAyEA...",
+    "fingerprint": "b1893608af9cef4d78dd8367d62c05ba364d9d82eb997dd2056b1900775bda1d"
+  }
+  ```
+
+#### 3. `POST /api/baselines/generate/{fileId}` — Re-baseline Single File
+- **Description:** Recomputes SHA-256, signs a new Triple-Lock envelope, retires the previous baseline (`is_current = false`), and updates file status to `VERIFIED`. Used after authorized administrative updates.
+- **Path Parameter:** `fileId` (Long, required).
+- **Response `200 OK`:**
+  ```json
+  {
+    "message": "Cryptographic baseline regenerated and signed successfully",
+    "baseline": {
+      "id": 5,
+      "sha256Hash": "a3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "signature": "bmV3LXNpZ25hdHVyZQ==",
+      "publicKeyId": "b1893608af9cef4d78dd8367d62c05ba364d9d82eb997dd2056b1900775bda1d",
+      "current": true,
+      "createdAt": "2026-10-24T17:00:00"
+    }
+  }
+  ```
+- **Response `404 Not Found`:** File ID does not exist.
+
+#### 4. `POST /api/baselines/generate-all` — Batch Re-baseline All Active Files
+- **Description:** Iterates across all active watched files and refreshes their cryptographic baselines.
+- **Response `200 OK`:**
+  ```json
+  {
+    "message": "Batch re-baseline operation completed",
+    "totalActive": 12,
+    "successfullyBaselined": 12,
+    "failedFiles": []
+  }
+  ```
+
+---
+
+### 5.3. Incident Triage & Alerts Endpoints (`AlertController.java`)
+
+#### 1. `GET /api/alerts` — List Unresolved Alerts
+- **Description:** Feeds real-time unresolved security alerts ordered newest-first (`findByResolvedFalseOrderByDetectedAtDesc`).
+- **Response `200 OK`:**
+  ```json
+  [
+    {
+      "id": 1,
+      "filePath": "/etc/shadow",
+      "eventType": "UNAUTHORIZED_MODIFICATION",
+      "severity": "CRITICAL",
+      "expectedHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "actualHash": "a3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "message": "File content altered on disk without cryptographic re-baselining",
+      "resolved": false,
+      "detectedAt": "2026-10-24T17:15:00"
+    }
+  ]
+  ```
+
+#### 2. `GET /api/alerts/all` — Audit Feed (Recent 50 Alerts)
+- **Description:** Returns the 50 most recent alert events regardless of resolution status.
+- **Response `200 OK`:** Array of up to 50 `AlertEvent` objects.
+
+#### 3. `POST /api/alerts/{id}/resolve` — Resolve Security Alert
+- **Description:** Marks an alert investigated and resolved (`is_resolved = true`), removing it from the active triage feed and decrementing the dashboard badge counter.
+- **Path Parameter:** `id` (Long, required).
+- **Response `200 OK`:**
+  ```json
+  {
+    "message": "Alert successfully marked as resolved",
+    "alertId": 1,
+    "resolved": true
+  }
+  ```
+- **Response `404 Not Found`:** Alert ID does not exist.
+
+#### 4. `POST /api/alerts/scan-now` — Trigger Manual Scan
+- **Description:** Triggers an immediate out-of-band verification scan across all active watched files without waiting for the Quartz scheduled interval.
+- **Response `200 OK`:**
+  ```json
+  {
+    "message": "Manual integrity verification scan executed successfully",
+    "status": "COMPLETED"
+  }
+  ```
 
 ---
 

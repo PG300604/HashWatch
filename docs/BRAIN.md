@@ -82,7 +82,7 @@ flowchart TD
     end
 
     subgraph Sprint3["Sprint 3: REST API Layer"]
-        S3R["Riya: API (FileController & BaselineController)"]
+        S3R["✅ Riya: API (FileController & BaselineController)"]
         S3P["Priyanshu: API & Backend (AlertController & manual scans)"]
         S3S["Samarjeet: Cryptology (Detached signature validation)"]
     end

@@ -72,11 +72,19 @@
 ### Sprint 3: REST API & Baseline Management Layer
 **Focus:** API, Backend, Cryptology.
 
-| Task ID | Domain | Assigned To | Folder / Target Files | Task Description | Doc Update Required |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **S3-T1** | API | Riya | `src/main/java/com/hashwatch/controller/FileController.java`, `BaselineController.java` | Implement endpoints for file registration, re-baselining, and public key retrieval. | `docs/TRD.md` (API Spec) |
-| **S3-T2** | API & Backend | Priyanshu | `src/main/java/com/hashwatch/controller/AlertController.java` | Implement alert triage endpoints (`/api/alerts`, `/resolve`, `/scan-now`). | `docs/TRD.md` (Alerts API) |
-| **S3-T3** | Cryptology | Samarjeet | `src/main/java/com/hashwatch/service/SigningService.java` | Handle key rotation, PEM/DER encoding, and detached signature validation. | `docs/TRD.md` (Key Storage) |
+| Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| **S3-T1** | API | Riya | ✅ **Done** | `src/main/java/com/hashwatch/controller/FileController.java`, `BaselineController.java`, `src/test/java/.../controller/` | Implement RESTful endpoints for file registration, re-baselining, deactivation, and public key retrieval; pass 16 MockMvc tests. | `docs/TRD.md` (Section 5) |
+| **S3-T2** | API & Backend | Priyanshu | ⏳ **In Progress** | `src/main/java/com/hashwatch/controller/AlertController.java` | Implement alert triage endpoints (`/api/alerts`, `/resolve`, `/scan-now`). | `docs/TRD.md` (Alerts API) |
+| **S3-T3** | Cryptology | Samarjeet | ⏳ **Pending** | `src/main/java/com/hashwatch/service/SigningService.java` | Handle key rotation, PEM/DER encoding, and detached signature validation. | `docs/TRD.md` (Key Storage) |
+
+#### Sprint 3 Progress Summary
+
+##### 1. File & Baseline REST Management Layer (`S3-T1` & `SA-5` — Riya)
+- **`FileController.java`:** Complete implementation of `GET /api/files` (all and active-only filter), `GET /api/files/{id}` (single file lookup), `POST /api/files` (path normalization, disk validation, duplicate conflict check, automated initial baseline establishment with Triple-Lock canonical envelope and Ed25519 signing, returning 201 Created), and `DELETE /api/files/{id}` (soft-delete deactivation).
+- **`BaselineController.java`:** Complete implementation of `GET /api/baselines` (active baselines feed), `GET /api/baselines/public-key` (exports Base64 public key and SHA-256 fingerprint for third-party audit verification), `POST /api/baselines/generate/{fileId}` (regenerates and resigns baseline for single file), and `POST /api/baselines/generate-all` (batch re-baseline across all active files).
+- **Test Suites (`FileControllerTest.java` & `BaselineControllerTest.java`):** 16 MockMvc integration tests verifying all 200, 201, 400 Bad Request, 404 Not Found, and 409 Conflict scenarios.
+- **OpenAPI / REST Contract (`docs/TRD.md` Section 5):** Documented complete endpoint contracts with JSON request/response bodies, query parameters, and error problem models.
 
 ---
 
