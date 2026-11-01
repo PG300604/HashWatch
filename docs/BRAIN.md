@@ -77,20 +77,20 @@ flowchart TD
 
     subgraph Sprint2["Sprint 2: Comparison Engine & Scheduler"]
         S2P["✅ Priyanshu: Backend (ComparisonService Triple-Lock & Fingerprint Pinned)"]
-        S2S["Samarjeet: Backend (Quartz MonitoringJob loop)"]
-        S2R["Riya: DBMS & API (AlertEvent queries & triage logic)"]
+        S2S["✅ Samarjeet: Backend (Quartz MonitoringJob loop)"]
+        S2R["✅ Riya: DBMS & API (AlertEvent queries & triage logic)"]
     end
 
     subgraph Sprint3["Sprint 3: REST API Layer"]
-        S3R["Riya: API (FileController & BaselineController)"]
-        S3P["Priyanshu: API & Backend (AlertController & manual scans)"]
-        S3S["Samarjeet: Cryptology (Detached signature validation)"]
+        S3R["✅ Riya: API (FileController & BaselineController)"]
+        S3P["✅ Priyanshu: API & Backend (AlertController & manual scans)"]
+        S3S["✅ Samarjeet: Cryptology (Detached signature validation)"]
     end
 
     subgraph Sprint4["Sprint 4: Web Dashboard UI"]
-        S4R["Riya: Frontend (Thymeleaf UI & alerts view)"]
-        S4S["Samarjeet: Frontend/Backend (DashboardViewController stats)"]
-        S4P["Priyanshu: DevOps (Local testing & profiles)"]
+        S4R["✅ Riya: Frontend (Thymeleaf UI & alerts view)"]
+        S4S["✅ Samarjeet: Frontend/Backend (DashboardViewController stats)"]
+        S4P["✅ Priyanshu: DevOps (Local testing & profiles)"]
     end
 
     subgraph Sprint5["Sprint 5: Benchmarking & CI"]

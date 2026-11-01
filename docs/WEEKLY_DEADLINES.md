@@ -24,7 +24,23 @@
 
 - [x] **S2-T1 (Priyanshu — Backend):** Implemented `ComparisonService.java` with Triple-Lock canonical envelope (`HashWatch:v1:<path>:<hash>:<size>`), fingerprint-pinned Ed25519 verification in `SigningService.java`, 5-state integrity machine (`UNTRACKED`, `VERIFIED`, `TAMPERED`, `MISSING`, `SIGNATURE_INVALID`), and alert deduplication. All 10 tests in `ComparisonServiceTest.java` passing.
 - [x] **S2-T2 (Samarjeet — Backend):** Implement Quartz trigger execution loop, scan timeout handling, and exception resilience in `MonitoringJob.java` & `SchedulerConfig.java` (3/3 tests passing).
-- [ ] **S2-T3 (Riya — DBMS & API):** Implement alert queries (unresolved alerts, severity filters) in `AlertEventRepository` and persistence tests.
+- [x] **S2-T3 (Riya — DBMS & API):** Implement alert queries (unresolved alerts, severity filters) in `AlertEventRepository` and persistence tests (18 tests passing).
+
+---
+
+## Sprint 3 Task Status Checklist
+
+- [x] **S3-T1 (Riya — API):** Implement FileController and BaselineController REST endpoints for file registration, baseline generation, public key retrieval, and MockMvc test suite (21 tests passing).
+- [x] **S3-T2 (Priyanshu — API & Backend):** Implement alert triage endpoints (`/api/alerts`, `/resolve`, `/scan-now`).
+- [x] **S3-T3 (Samarjeet — Cryptology):** Handle key rotation, PEM/DER encoding, and detached signature validation.
+
+---
+
+## Sprint 4 Task Status Checklist
+
+- [x] **S4-T1 (Riya — Frontend):** Build responsive dashboard UI with system health status banner, 4 metric cards, file registration form, inventory table, and dark-theme CSS (`dashboard.html`, `style.css`).
+- [x] **S4-T2 (Riya — Frontend & API):** Build incident triage UI (`alerts.html`), async JavaScript integration with toast notifications (`app.js`), model binding (`DashboardViewController.java`), and MockMvc test suite (`DashboardViewControllerTest.java`, 4/4 passing).
+- [x] **S4-T3 (Samarjeet — Backend & DBMS):** Model attribute aggregation (count queries, alert summaries) for Thymeleaf rendering.
 
 > [!IMPORTANT]
 > All Pull Requests for the sprint must be submitted by **Saturday 18:00 IST** to allow review and resolution before the Sunday cutoff.

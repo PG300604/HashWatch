@@ -7,13 +7,13 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <!--
     =============================================================================
     DOMAIN: Frontend
-    ASSIGNED TO: Riya (Sprint 4)
+    ASSIGNED TO: Riya (Sprint 4: S4-T1 / SB-2)
     FOLDER / TARGET: src/main/resources/templates/dashboard.html
     DOC TO UPDATE: docs/PRD.md (Section 4 FR6)
     =============================================================================
@@ -21,83 +21,137 @@
     <header class="navbar">
         <div class="brand">
             <span class="logo-icon">🛡️</span>
-            <h1>HashWatch</h1>
-            <span class="badge">Ed25519 Signed</span>
+            <div>
+                <h1>HashWatch</h1>
+                <span class="brand-sub">Cryptographically Signed FIM</span>
+            </div>
+            <span class="badge badge-crypto">SunEC Ed25519</span>
         </div>
         <nav class="nav-links">
             <a href="/" class="active">Dashboard</a>
-            <a href="/alerts">Alerts <span class="counter" th:text="${alertCount}">0</span></a>
-            <button class="btn btn-primary" onclick="triggerScan()">⚡ Run Integrity Scan</button>
+            <a href="/alerts">Alerts <span class="counter" th:classappend="${alertCount > 0} ? 'counter-danger' : 'counter-zero'" th:text="${alertCount}">0</span></a>
+            <button id="scanBtn" class="btn btn-primary" onclick="triggerScan()">⚡ Run Integrity Scan</button>
         </nav>
     </header>
 
     <main class="container">
-        <!-- Metric Cards -->
-        <section class="metrics-grid">
-            <div class="metric-card">
-                <h3>Watched Files</h3>
-                <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Render activeCount -->
-                <p class="metric-value" th:text="${activeCount}">0</p>
-                <span class="metric-sub">Monitored periodically</span>
+        <!-- System Health Status Banner -->
+        <section class="health-banner" th:classappend="${systemHealthy} ? 'health-ok' : 'health-breached'">
+            <div class="health-indicator">
+                <span class="pulse-dot"></span>
+                <div>
+                    <h2 th:text="${systemHealthy} ? 'SYSTEM INTEGRITY SECURE' : 'INTEGRITY BREACH / ANOMALY DETECTED'">SYSTEM STATUS</h2>
+                    <p th:text="${systemHealthy} ? 'All monitored files match their cryptographically signed Ed25519 envelopes.' : 'One or more files have failed cryptographic verification or been altered without re-baselining.'">Status details</p>
+                </div>
             </div>
-            <div class="metric-card">
-                <h3>Active Baselines</h3>
-                <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Render count of baselines -->
-                <p class="metric-value" th:text="${#lists.size(baselines)}">0</p>
-                <span class="metric-sub">SHA-256 + Ed25519</span>
-            </div>
-            <div class="metric-card" th:classappend="${alertCount > 0} ? 'card-danger' : 'card-success'">
-                <h3>Unresolved Alerts</h3>
-                <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Render alertCount -->
-                <p class="metric-value" th:text="${alertCount}">0</p>
-                <span class="metric-sub" th:text="${alertCount > 0} ? 'Tampering detected!' : 'All signatures valid'">Status</span>
+            <div class="health-meta">
+                <span class="meta-label">Quartz Scan Interval:</span>
+                <span class="meta-value">30s Periodic</span>
             </div>
         </section>
 
-        <!-- Register New File Form -->
+        <!-- Metric Cards Grid -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Active Watched Files</h3>
+                    <span class="metric-icon">📁</span>
+                </div>
+                <p class="metric-value" th:text="${activeCount}">0</p>
+                <span class="metric-sub" th:text="${#lists.size(files)} + ' total registered'">0 total</span>
+            </div>
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Active Baselines</h3>
+                    <span class="metric-icon">🔐</span>
+                </div>
+                <p class="metric-value" th:text="${#lists.size(baselines)}">0</p>
+                <span class="metric-sub">Triple-Lock SHA-256 + Ed25519</span>
+            </div>
+            <div class="metric-card" th:classappend="${tamperedCount > 0} ? 'card-danger' : 'card-neutral'">
+                <div class="metric-header">
+                    <h3>Tampered Files</h3>
+                    <span class="metric-icon">⚠️</span>
+                </div>
+                <p class="metric-value" th:text="${tamperedCount}">0</p>
+                <span class="metric-sub" th:text="${tamperedCount > 0} ? 'Requires investigation' : 'Zero files compromised'">Status</span>
+            </div>
+            <div class="metric-card" th:classappend="${alertCount > 0} ? 'card-danger' : 'card-success'">
+                <div class="metric-header">
+                    <h3>Unresolved Alerts</h3>
+                    <span class="metric-icon">🚨</span>
+                </div>
+                <p class="metric-value" th:text="${alertCount}">0</p>
+                <span class="metric-sub" th:text="${alertCount > 0} ? 'Pending triage in Security Center' : 'All incidents resolved'">Status</span>
+            </div>
+        </section>
+
+        <!-- Register New Watched File Form -->
         <section class="card">
-            <h2>Add File to Watchlist</h2>
-            <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Form submit handling via JS -->
+            <div class="card-header">
+                <div>
+                    <h2>Register File to Watchlist</h2>
+                    <p class="text-muted">Calculates 64 KB streaming SHA-256 digest and generates asymmetric Ed25519 digital signature.</p>
+                </div>
+            </div>
             <form id="addFileForm" onsubmit="registerFile(event)" class="form-row">
-                <input type="text" id="filePathInput" placeholder="Enter absolute file path (e.g. /etc/hosts or C:\system.conf)" required>
-                <button type="submit" class="btn btn-secondary">+ Register & Baseline</button>
+                <input type="text" id="filePathInput" placeholder="Enter absolute file path (e.g. /etc/hosts or C:\system.conf)" required autocomplete="off">
+                <button type="submit" id="registerBtn" class="btn btn-secondary">+ Register & Establish Baseline</button>
             </form>
         </section>
 
         <!-- Watched Files Table -->
         <section class="card">
             <div class="card-header">
-                <h2>Watched Files & Status</h2>
-                <button class="btn btn-sm btn-outline" onclick="rebaselineAll()">Rebaseline All</button>
+                <div>
+                    <h2>Monitored Files Inventory</h2>
+                    <p class="text-muted">State machine: VERIFIED (intact), TAMPERED (digest mismatch), MISSING (file removed), SIGNATURE_INVALID (key/envelope tampering).</p>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline" onclick="rebaselineAll()">🔄 Rebaseline All Active</button>
+                </div>
             </div>
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
-                            <th>File Path</th>
-                            <th>Status</th>
-                            <th>Size (Bytes)</th>
-                            <th>Last Checked</th>
+                            <th>ID</th>
+                            <th>Target File Path</th>
+                            <th>Integrity Status</th>
+                            <th>Active</th>
+                            <th>File Size</th>
+                            <th>Last Modified</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Populate watched file list with status pills -->
                         <tr th:if="${#lists.isEmpty(files)}">
-                            <td colspan="5" class="empty-state">No files registered yet. Add a file path above to begin monitoring.</td>
+                            <td colspan="7" class="empty-state">
+                                <span class="empty-icon">📂</span>
+                                <p>No files registered in the watchlist yet.</p>
+                                <span class="text-muted">Use the form above to register your first critical configuration file.</span>
+                            </td>
                         </tr>
-                        <tr th:each="file : ${files}">
-                            <td class="font-mono text-break" th:text="${file.filePath}"></td>
+                        <tr th:each="file : ${files}" th:classappend="${!file.active ? 'row-inactive' : (file.status.name() == 'TAMPERED' ? 'row-tampered' : '')}">
+                            <td class="font-mono text-muted" th:text="${file.id}">1</td>
+                            <td class="font-mono text-break">
+                                <span class="file-path-text" th:text="${file.filePath}">/path/to/file</span>
+                            </td>
                             <td>
                                 <span class="status-pill"
-                                      th:classappend="${file.status.name() == 'VERIFIED' ? 'status-ok' : (file.status.name() == 'TAMPERED' ? 'status-danger' : 'status-warn')}"
+                                      th:classappend="${file.status.name() == 'VERIFIED' ? 'status-ok' : (file.status.name() == 'TAMPERED' ? 'status-danger' : (file.status.name() == 'MISSING' ? 'status-missing' : (file.status.name() == 'SIGNATURE_INVALID' ? 'status-invalid' : 'status-warn')))}"
                                       th:text="${file.status}">VERIFIED</span>
                             </td>
-                            <td th:text="${file.fileSize}">0</td>
-                            <td th:text="${file.lastModified != null ? #temporals.format(file.lastModified, 'yyyy-MM-dd HH:mm:ss') : 'N/A'}"></td>
                             <td>
-                                <button class="btn btn-sm" th:onclick="'rebaselineSingle(' + ${file.id} + ')'">Rebaseline</button>
-                                <button class="btn btn-sm btn-danger-outline" th:onclick="'removeFile(' + ${file.id} + ')'">Remove</button>
+                                <span class="badge" th:classappend="${file.active} ? 'badge-active' : 'badge-inactive'" th:text="${file.active} ? 'ACTIVE' : 'PAUSED'">ACTIVE</span>
+                            </td>
+                            <td class="font-mono" th:text="${file.fileSize != null ? file.fileSize + ' B' : 'N/A'}">0 B</td>
+                            <td class="text-muted" th:text="${file.lastModified != null ? #temporals.format(file.lastModified, 'yyyy-MM-dd HH:mm:ss') : 'N/A'}">N/A</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-outline" th:onclick="'rebaselineSingle(' + ${file.id} + ')'" title="Refresh cryptographic signature after authorized modification">Rebaseline</button>
+                                    <button th:if="${file.active}" class="btn btn-sm btn-danger-outline" th:onclick="'removeFile(' + ${file.id} + ')'" title="Pause monitoring (soft-delete)">Unwatch</button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -105,6 +159,9 @@
             </div>
         </section>
     </main>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
 
     <script th:src="@{/js/app.js}"></script>
 </body>

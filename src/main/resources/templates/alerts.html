@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HashWatch | Security Alerts</title>
+    <title>HashWatch | Security Alerts Center</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <!--
     =============================================================================
     DOMAIN: Frontend
-    ASSIGNED TO: Riya (Sprint 4)
+    ASSIGNED TO: Riya (Sprint 4: S4-T2 / SB-3)
     FOLDER / TARGET: src/main/resources/templates/alerts.html
     DOC TO UPDATE: docs/PRD.md (Section 4 FR5)
     =============================================================================
@@ -21,56 +21,132 @@
     <header class="navbar">
         <div class="brand">
             <span class="logo-icon">🛡️</span>
-            <h1>HashWatch</h1>
-            <span class="badge">Security Center</span>
+            <div>
+                <h1>HashWatch</h1>
+                <span class="brand-sub">Cryptographically Signed FIM</span>
+            </div>
+            <span class="badge badge-crypto">Security Incident Center</span>
         </div>
         <nav class="nav-links">
             <a href="/">Dashboard</a>
-            <a href="/alerts" class="active">Alerts <span class="counter" th:text="${alertCount}">0</span></a>
-            <button class="btn btn-primary" onclick="triggerScan()">⚡ Run Integrity Scan</button>
+            <a href="/alerts" class="active">Alerts <span class="counter" th:classappend="${alertCount > 0} ? 'counter-danger' : 'counter-zero'" th:text="${alertCount}">0</span></a>
+            <button id="scanBtn" class="btn btn-primary" onclick="triggerScan()">⚡ Run Integrity Scan</button>
         </nav>
     </header>
 
     <main class="container">
+        <!-- Incident Metrics Summary -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Total Incidents Logged</h3>
+                    <span class="metric-icon">📋</span>
+                </div>
+                <p class="metric-value" th:text="${#lists.size(alerts)}">0</p>
+                <span class="metric-sub">Historical audit trail</span>
+            </div>
+            <div class="metric-card" th:classappend="${alertCount > 0} ? 'card-danger' : 'card-success'">
+                <div class="metric-header">
+                    <h3>Unresolved Alerts</h3>
+                    <span class="metric-icon">🚨</span>
+                </div>
+                <p class="metric-value" th:text="${alertCount}">0</p>
+                <span class="metric-sub" th:text="${alertCount > 0} ? 'Requires operator investigation' : 'Zero pending incidents'">Pending action</span>
+            </div>
+            <div class="metric-card" th:classappend="${criticalCount > 0} ? 'card-danger' : 'card-neutral'">
+                <div class="metric-header">
+                    <h3>Critical Breaches</h3>
+                    <span class="metric-icon">💥</span>
+                </div>
+                <p class="metric-value" th:text="${criticalCount}">0</p>
+                <span class="metric-sub">Digest / Signature failures</span>
+            </div>
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Resolved Incidents</h3>
+                    <span class="metric-icon">✅</span>
+                </div>
+                <p class="metric-value" th:text="${#lists.size(alerts) - alertCount}">0</p>
+                <span class="metric-sub">Remediated & baselined</span>
+            </div>
+        </section>
+
+        <!-- Incident Triage & Event Log -->
         <section class="card">
             <div class="card-header">
-                <h2>Integrity Event & Alert Log</h2>
-                <button class="btn btn-sm btn-outline" onclick="location.reload()">Refresh</button>
+                <div>
+                    <h2>Cryptographic Integrity Event Log</h2>
+                    <p class="text-muted">Real-time alerts triggered by Quartz periodic integrity auditor (SHA-256 mismatch or Ed25519 signature invalidation).</p>
+                </div>
+                <div class="filter-group">
+                    <button class="filter-btn active" onclick="filterAlerts('all', this)">All Events</button>
+                    <button class="filter-btn" onclick="filterAlerts('unresolved', this)">Unresolved Only</button>
+                    <button class="filter-btn" onclick="filterAlerts('critical', this)">Critical Only</button>
+                    <button class="btn btn-sm btn-outline" onclick="location.reload()">🔄 Refresh</button>
+                </div>
             </div>
+
             <div class="table-responsive">
-                <table>
+                <table id="alertsTable">
                     <thead>
                         <tr>
                             <th>Severity</th>
                             <th>Event Type</th>
-                            <th>File Path</th>
-                            <th>Expected Hash</th>
-                            <th>Actual Hash</th>
-                            <th>Timestamp</th>
-                            <th>Action</th>
+                            <th>Target File Path</th>
+                            <th>Cryptographic Digest Comparison</th>
+                            <th>Detection Timestamp</th>
+                            <th>Triage Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Alert event loop -->
                         <tr th:if="${#lists.isEmpty(alerts)}">
-                            <td colspan="7" class="empty-state">No alerts recorded. All files are intact.</td>
+                            <td colspan="6" class="empty-state">
+                                <span class="empty-icon">🛡️</span>
+                                <p>No security alerts recorded. All monitored files are intact and verified.</p>
+                                <span class="text-muted">The Quartz background daemon continuously evaluates files against their signed baselines.</span>
+                            </td>
                         </tr>
-                        <tr th:each="alert : ${alerts}" th:classappend="${!alert.resolved ? 'row-unresolved' : 'row-resolved'}">
+                        <tr th:each="alert : ${alerts}"
+                            class="alert-row"
+                            th:data-resolved="${alert.resolved}"
+                            th:data-severity="${alert.severity.name()}"
+                            th:classappend="${!alert.resolved ? 'row-unresolved' : 'row-resolved'}">
                             <td>
                                 <span class="severity-pill"
-                                      th:classappend="${alert.severity.name() == 'CRITICAL' ? 'severity-critical' : (alert.severity.name() == 'HIGH' ? 'severity-high' : 'severity-low')}"
+                                      th:classappend="${alert.severity.name() == 'CRITICAL' ? 'severity-critical' : (alert.severity.name() == 'HIGH' ? 'severity-high' : (alert.severity.name() == 'MEDIUM' ? 'severity-medium' : 'severity-low'))}"
                                       th:text="${alert.severity}">HIGH</span>
                             </td>
-                            <td class="font-bold" th:text="${alert.eventType}">MISMATCH</td>
-                            <td class="font-mono text-break" th:text="${alert.filePath}"></td>
-                            <td class="font-mono hash-cell" th:text="${alert.expectedHash != null ? alert.expectedHash : 'N/A'}"></td>
-                            <td class="font-mono hash-cell" th:text="${alert.actualHash != null ? alert.actualHash : 'N/A'}"></td>
-                            <td th:text="${alert.detectedAt != null ? #temporals.format(alert.detectedAt, 'yyyy-MM-dd HH:mm:ss') : 'N/A'}"></td>
+                            <td>
+                                <span class="font-bold" th:text="${alert.eventType}">MISMATCH</span>
+                            </td>
+                            <td class="font-mono text-break">
+                                <span class="file-path-text" th:text="${alert.filePath}">/path/to/file</span>
+                            </td>
+                            <td>
+                                <div class="hash-diff font-mono">
+                                    <div>
+                                        <span class="hash-label">Expected:</span>
+                                        <span class="hash-val hash-expected"
+                                              th:text="${alert.expectedHash != null ? alert.expectedHash : 'NONE'}"
+                                              th:title="${alert.expectedHash}"></span>
+                                    </div>
+                                    <div>
+                                        <span class="hash-label">Actual:</span>
+                                        <span class="hash-val hash-actual"
+                                              th:text="${alert.actualHash != null ? alert.actualHash : 'NONE'}"
+                                              th:title="${alert.actualHash}"></span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-muted" th:text="${alert.detectedAt != null ? #temporals.format(alert.detectedAt, 'yyyy-MM-dd HH:mm:ss') : 'N/A'}"></td>
                             <td>
                                 <button th:if="${!alert.resolved}"
                                         class="btn btn-sm btn-secondary"
-                                        th:onclick="'resolveAlert(' + ${alert.id} + ')'">Resolve</button>
-                                <span th:if="${alert.resolved}" class="text-muted">Resolved</span>
+                                        th:onclick="'resolveAlert(' + ${alert.id} + ')'"
+                                        title="Mark alert as acknowledged and resolved">
+                                    ✓ Resolve
+                                </button>
+                                <span th:if="${alert.resolved}" class="badge badge-active">Resolved</span>
                             </td>
                         </tr>
                     </tbody>
@@ -78,6 +154,8 @@
             </div>
         </section>
     </main>
+
+    <div id="toastContainer" class="toast-container"></div>
 
     <script th:src="@{/js/app.js}"></script>
 </body>

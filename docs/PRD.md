@@ -68,12 +68,16 @@ In modern enterprise and cloud computing infrastructures, unauthorized modificat
   - **SIGNATURE_INVALID:** Baseline signature fails Ed25519 verification (alerting database tampering).
 
 - **FR5: Alert Event Logging & Incident Triage**
-  - Any integrity anomaly automatically triggers an `AlertEvent` entry with severity level (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), expected hash, actual hash, and timestamp.
-  - Operators can view unresolved alerts and mark them as resolved.
+  - Any integrity anomaly automatically triggers an `AlertEvent` entry with severity level (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), expected hash, actual hash, event type (`MISMATCH`, `UNAUTHORIZED_MODIFICATION`, `MISSING_FILE`, `SIGNATURE_INVALID`), and timestamp.
+  - Dedicated security incident center (`/alerts`) rendering historical audit logs, metric summaries (total, unresolved, critical, resolved), cryptographic expected-vs-actual hash comparison, dynamic client-side filtering, and 1-click alert resolution via `POST /api/alerts/{id}/resolve`.
 
 - **FR6: Management Dashboard & Web Interface**
-  - Clean web dashboard rendering overall health status, active file count, alert count, and baseline totals.
-  - Provides quick action buttons: "Run Integrity Scan Now", "Add File", "Rebaseline All", "Resolve Alert".
+  - Modern, responsive dark-themed operator cockpit (`/`) powered by Thymeleaf and custom CSS.
+  - System integrity banner featuring real-time pulsating health indicator reflecting overall security posture (`SYSTEM INTEGRITY SECURE` vs `INTEGRITY BREACH DETECTED`).
+  - Four key telemetry cards: Active Watched Files, Active Baselines, Tampered Files, and Unresolved Incidents.
+  - Dynamic watchlist registration form with client-side validation triggering instant SHA-256 calculation and Ed25519 asymmetric signature generation.
+  - Monitored files inventory table displaying ID, target path, integrity status pill (`VERIFIED`, `TAMPERED`, `MISSING`, `SIGNATURE_INVALID`), monitoring state (`ACTIVE`/`PAUSED`), file size, last modified timestamp, and action buttons (`Rebaseline`, `Unwatch`, and bulk `Rebaseline All`).
+  - Client-side asynchronous REST integration (`app.js`) with interactive toast notifications for manual scan triggers, baseline generation, file deactivation, and incident triage.
 
 - **FR7: REST API**
   - Exposes standardized JSON endpoints for files (`/api/files`), baselines (`/api/baselines`), and alerts (`/api/alerts`).

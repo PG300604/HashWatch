@@ -89,6 +89,19 @@
 | **S4-T2** | Frontend & API | Riya | `src/main/resources/static/js/app.js`, `templates/alerts.html` | Wire asynchronous REST calls for instant scan triggers, alert resolution, and live reload. | `docs/TRD.md` |
 | **S4-T3** | Backend & DBMS | Samarjeet | `src/main/java/com/hashwatch/controller/DashboardViewController.java` | Model attribute aggregation (count queries, alert summaries) for Thymeleaf rendering. | `docs/PACKAGE_STRUCTURE.md` |
 
+#### Sprint 4 Implementation Highlights & Deliverables Completed
+
+##### 1. Responsive Operator Dashboard UI & Styling (`S4-T1` — Riya)
+- Implemented modern dark-themed cockpit in `src/main/resources/templates/dashboard.html` with real-time system health status banner (`SYSTEM INTEGRITY SECURE` vs `INTEGRITY BREACH DETECTED`), animated CSS pulse dot, and Quartz interval badge.
+- Built 4 responsive metric cards displaying real-time database counts (active watched files, signed baselines, compromised files, unresolved alerts).
+- Integrated watched file registration form with immediate cryptographic baseline establishment and monitored files inventory table with status pills (`VERIFIED`, `TAMPERED`, `MISSING`, `SIGNATURE_INVALID`).
+- Authored custom responsive stylesheet in `src/main/resources/static/css/style.css` supporting dark mode, typography (`JetBrains Mono` and `Plus Jakarta Sans`), glassmorphism navigation, status badges, and toast containers.
+
+##### 2. Incident Triage Center, Asynchronous Client & Tests (`S4-T2` — Riya)
+- Implemented dedicated incident triage center in `src/main/resources/templates/alerts.html` with incident summary counters, cryptographic hash diff comparisons (expected baseline vs actual computed), multi-state client filtering (all, unresolved, critical), and 1-click resolution buttons.
+- Developed client-side asynchronous controller in `src/main/resources/static/js/app.js` using `fetch()` REST calls with interactive toast notifications for manual scans (`/api/alerts/scan-now`), file registration (`/api/files`), single/bulk re-baselining (`/api/baselines/generate`), and alert resolution (`/api/alerts/{id}/resolve`).
+- Implemented model attribute binding in `DashboardViewController.java` and authored comprehensive MockMvc test suite in `src/test/java/com/hashwatch/controller/DashboardViewControllerTest.java` (4/4 tests passing).
+
 ---
 
 ### Sprint 5: DevOps Automation, Performance Benchmarking & Python Analysis
