@@ -77,11 +77,22 @@
 ### Sprint 3: REST API & Baseline Management Layer
 **Focus:** API, Backend, Cryptology.
 
-| Task ID | Domain | Assigned To | Folder / Target Files | Task Description | Doc Update Required |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **S3-T1** | API | Riya | `src/main/java/com/hashwatch/controller/FileController.java`, `BaselineController.java` | Implement endpoints for file registration, re-baselining, and public key retrieval. | `docs/TRD.md` (API Spec) |
-| **S3-T2** | API & Backend | Priyanshu | `src/main/java/com/hashwatch/controller/AlertController.java` | Implement alert triage endpoints (`/api/alerts`, `/resolve`, `/scan-now`). | `docs/TRD.md` (Alerts API) |
-| **S3-T3** | Cryptology | Samarjeet | `src/main/java/com/hashwatch/service/SigningService.java` | Handle key rotation, PEM/DER encoding, and detached signature validation. | `docs/TRD.md` (Key Storage) |
+| Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| **S3-T1** | API | Priyanshu / Riya | ⏳ **In Progress** | `src/main/java/com/hashwatch/controller/FileController.java`, `BaselineController.java` | Implement endpoints for file registration, batch registration, re-baselining, and public key retrieval. | `docs/TRD.md` (API Spec) |
+| **S3-T2** | API & Backend | Priyanshu | ⏳ **In Progress** | `src/main/java/com/hashwatch/controller/AlertController.java` | Implement alert triage endpoints (`/api/alerts`, `/resolve`, `/scan-now`). | `docs/TRD.md` (Alerts API) |
+| **S3-T3** | Cryptology | Samarjeet | ⏳ **In Progress** | `src/main/java/com/hashwatch/service/SigningService.java` | Handle key rotation, PEM/DER encoding, and detached signature validation. | `docs/TRD.md` (Key Storage) |
+
+#### Sprint 3 Progress Summary
+
+##### 1. File Registration & Monitoring API (`S3-T1` — Priyanshu / Riya)
+- **Implemented `FileController.java`** (`/api/files`):
+  - Single file registration (`POST /api/files`) with duplicate detection, automatic baseline generation, and SHA-256 hash computation.
+  - Batch registration (`POST /api/files/batch`) with per-file fault isolation, returning `BatchRegistrationResult` with aggregated success/failure tallies.
+  - Readability & existence validation via `Files.isReadable(path)` to prevent registering unreadable files.
+  - 100 MB synchronous registration safety cap (`MAX_SYNC_REGISTRATION_SIZE_BYTES`) preventing JVM thread starvation during baseline establishment.
+  - Soft-delete reactivation: Automatically reactivates files marked `SOFT_DELETED` without database collision.
+- **MockMvc Test Suite:** Authored `FileControllerTest.java` (12/12 passing) validating status codes, validation constraints, batch isolation, and exception handling.
 
 ---
 
