@@ -92,3 +92,9 @@ docs/.obsidian/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Internal Academic & Recovery Roadmaps (Private Team Planning)
+*.pdf
+HashWatch_Accelerated_Execution_Plan.*
+StrikePoint/
+
