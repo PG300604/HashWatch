@@ -48,7 +48,7 @@
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
 | **S2-T1** | Backend | Priyanshu | ✅ **Done** | `src/main/java/com/hashwatch/service/ComparisonService.java`, `src/test/java/.../ComparisonServiceTest.java` | Implement `establishBaseline()`, `verifyFile()`, Triple-Lock canonical envelope, fingerprint-pinned verification, 5-state integrity machine, and alert deduplication. | `docs/DFD.md` (Level 2), `docs/TRD.md` |
 | **S2-T2** | Backend | Samarjeet | ✅ **Done** | `src/main/java/com/hashwatch/scheduler/MonitoringJob.java`, `config/SchedulerConfig.java` | Quartz trigger execution loop; handle job exceptions and scan timeouts. | `docs/TRD.md` (Section 2.1) |
-| **S2-T3** | DBMS & API | Riya | ⏳ **In Progress** | `src/main/java/com/hashwatch/repository/`, `entity/AlertEvent.java` | Implement alert queries (unresolved alerts, severity filters) and persistence tests. | `docs/ERD.md` (Table 3.3) |
+| **S2-T3** | DBMS & API | Riya | ✅ **Done** | `src/main/java/com/hashwatch/repository/AlertEventRepository.java`, `src/test/java/.../AlertEventRepositoryTest.java` | Implement enriched alert queries (unresolved + severity filters, event-type filters, date-range, per-file lookups, pagination, aggregation counts) and 18 comprehensive persistence tests. | `docs/ERD.md` (Table 3.3.1) |
 
 #### Sprint 2 Progress Summary
 
@@ -67,6 +67,11 @@
 - Tuned `SchedulerConfig.java` with `withMisfireHandlingInstructionNextWithExistingCount()`, durable job identity, and recovery configuration.
 - Authored comprehensive test suite `MonitoringJobTest.java` (3/3 passing).
 
+##### 3. Alert Query Layer & Persistence Tests (`S2-T3` — Riya)
+- **Enriched `AlertEventRepository`** with 11 new Spring Data JPA derived query methods beyond the 4 existing ones (S1-T4), covering: combined severity + resolution filters, event-type classification, date-range searches, per-file alert lookups (by entity and by file path string for orphaned records), paginated result sets (`Page<AlertEvent>` with `Pageable`), and aggregation counts per severity/event-type.
+- **Dedicated `AlertEventRepositoryTest.java`** with 18 tests organized in 7 nested groups: Unresolved Alert Queries (3), Severity Filters (3), Event-Type Filters (3), Date-Range Queries (3), Per-File Lookups (2), Pagination (2), and Edge Cases (2). All tests run against H2 in-memory database with a 5-alert seed dataset spanning multiple severities, event types, and resolution states.
+- **Updated `docs/ERD.md`** — Added Section 3.3.1 documenting all 15 `AlertEventRepository` query methods with return types, descriptions, and downstream consumers (REST API, Dashboard, ComparisonService).
+
 ---
 
 ### Sprint 3: REST API & Baseline Management Layer
@@ -74,16 +79,22 @@
 
 | Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
-| **S3-T1** | API | Riya | ✅ **Done** | `src/main/java/com/hashwatch/controller/FileController.java`, `BaselineController.java`, `src/test/java/.../controller/` | Implement RESTful endpoints for file registration, re-baselining, deactivation, and public key retrieval; pass 16 MockMvc tests. | `docs/TRD.md` (Section 5) |
-| **S3-T2** | API & Backend | Priyanshu | ⏳ **In Progress** | `src/main/java/com/hashwatch/controller/AlertController.java` | Implement alert triage endpoints (`/api/alerts`, `/resolve`, `/scan-now`). | `docs/TRD.md` (Alerts API) |
-| **S3-T3** | Cryptology | Samarjeet | ⏳ **Pending** | `src/main/java/com/hashwatch/service/SigningService.java` | Handle key rotation, PEM/DER encoding, and detached signature validation. | `docs/TRD.md` (Key Storage) |
+| **S3-T1** | API | Riya & Priyanshu | ✅ **Done** | `src/main/java/com/hashwatch/controller/FileController.java`, `BaselineController.java`, `src/test/java/.../controller/` | Implement RESTful endpoints for file registration (batch and single), re-baselining, deactivation, and public key retrieval; pass MockMvc test suites. | `docs/TRD.md` (Section 5) |
+| **S3-T2** | API & Backend | Priyanshu & Riya | ✅ **Done** | `src/main/java/com/hashwatch/controller/AlertController.java`, `AlertControllerTest.java` | Implement alert triage endpoints (`/api/alerts`, `/resolve`, `/scan-now`) and test suite. | `docs/TRD.md` (Alerts API) |
+| **S3-T3** | Cryptology | Samarjeet | ⏳ **In Progress** | `src/main/java/com/hashwatch/service/SigningService.java` | Handle key rotation, PEM/DER encoding, and detached signature validation. | `docs/TRD.md` (Key Storage) |
 
 #### Sprint 3 Progress Summary
 
-##### 1. File & Baseline REST Management Layer (`S3-T1` & `SA-5` — Riya)
-- **`FileController.java`:** Complete implementation of `GET /api/files` (all and active-only filter), `GET /api/files/{id}` (single file lookup), `POST /api/files` (path normalization, disk validation, duplicate conflict check, automated initial baseline establishment with Triple-Lock canonical envelope and Ed25519 signing, returning 201 Created), and `DELETE /api/files/{id}` (soft-delete deactivation).
-- **`BaselineController.java`:** Complete implementation of `GET /api/baselines` (active baselines feed), `GET /api/baselines/public-key` (exports Base64 public key and SHA-256 fingerprint for third-party audit verification), `POST /api/baselines/generate/{fileId}` (regenerates and resigns baseline for single file), and `POST /api/baselines/generate-all` (batch re-baseline across all active files).
-- **Test Suites (`FileControllerTest.java` & `BaselineControllerTest.java`):** 16 MockMvc integration tests verifying all 200, 201, 400 Bad Request, 404 Not Found, and 409 Conflict scenarios.
+##### 1. File & Baseline REST Management Layer (`S3-T1`, `S3-T2` & `SA-5` — Riya & Priyanshu)
+- **`FileController.java` (`/api/files`):**
+  - Single file registration (`POST /api/files`) with duplicate detection, automatic baseline generation, and SHA-256 hash computation.
+  - Batch registration (`POST /api/files/batch`) with per-file fault isolation, returning `BatchRegistrationResult` with aggregated success/failure tallies.
+  - Readability & existence validation via `Files.isReadable(path)` preventing registration of unreadable files.
+  - 100 MB synchronous registration safety cap (`MAX_SYNC_REGISTRATION_SIZE_BYTES`) preventing JVM thread starvation during baseline establishment.
+  - Soft-delete reactivation: Automatically reactivates files marked `SOFT_DELETED` without database collision.
+- **`BaselineController.java` (`/api/baselines`):** Complete implementation of `GET /api/baselines` (active baselines feed), `GET /api/baselines/public-key` (exports Base64 public key and SHA-256 fingerprint for third-party audit verification), `POST /api/baselines/generate/{fileId}` (regenerates and resigns baseline for single file), and `POST /api/baselines/generate-all` (batch re-baseline across all active files).
+- **`AlertController.java` (`/api/alerts`):** Complete implementation of `GET /api/alerts` (unresolved alerts, newest first), `GET /api/alerts/all` (top 50 recent alerts), `POST /api/alerts/{id}/resolve` (mark alert investigated & resolved), and `POST /api/alerts/scan-now` (trigger immediate out-of-band integrity check).
+- **MockMvc Test Suites:** Comprehensive tests in `FileControllerTest.java`, `BaselineControllerTest.java`, and `AlertControllerTest.java` verifying HTTP 200, 201, 400 Bad Request, 404 Not Found, and 409 Conflict scenarios.
 - **OpenAPI / REST Contract (`docs/TRD.md` Section 5):** Documented complete endpoint contracts with JSON request/response bodies, query parameters, and error problem models.
 
 ---

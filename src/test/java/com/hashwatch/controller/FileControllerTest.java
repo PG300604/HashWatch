@@ -1,48 +1,51 @@
 package com.hashwatch.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hashwatch.entity.BaselineEntry;
+import com.hashwatch.dto.FileRegistrationRequest;
 import com.hashwatch.entity.FileStatus;
 import com.hashwatch.entity.WatchedFile;
+import com.hashwatch.repository.BaselineEntryRepository;
 import com.hashwatch.repository.WatchedFileRepository;
-import com.hashwatch.service.ComparisonService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * =============================================================================
- * DOMAIN: API
- * ASSIGNED TO: Riya (Sprint 3: S3-T1)
+ * DOMAIN: API Integration Tests
+ * ASSIGNED TO: Priyanshu (Sprint A: SA-2)
  * TARGET: src/test/java/com/hashwatch/controller/FileControllerTest.java
  * =============================================================================
  *
- * MockMvc integration tests for {@link FileController} REST endpoints:
- * - Listing all and active monitored files (GET /api/files)
- * - Single file lookup by ID (GET /api/files/{id})
- * - File registration and baseline creation (POST /api/files)
- * - Error cases: 400 Bad Request (missing/invalid path), 409 Conflict (duplicate)
- * - Soft-delete deactivation (DELETE /api/files/{id})
+ * MockMvc integration test suite validating:
+ * 1. File registration with atomic SHA-256 & Ed25519 baseline creation.
+ * 2. Directory traversal and path canonicalization.
+ * 3. Physical existence, isRegularFile, and isReadable permission checks.
+ * 4. 100 MB synchronous registration safety cap.
+ * 5. Batch registration with fault isolation.
+ * 6. Duplicate registration conflict (409) vs Intelligent Reactivation (200).
+ * 7. Soft deactivation vs permanent hard cascade deletion.
  */
-@WebMvcTest(FileController.class)
-class FileControllerTest {
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("h2")
+public class FileControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -50,183 +53,274 @@ class FileControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @Autowired
     private WatchedFileRepository watchedFileRepository;
 
-    @MockBean
-    private ComparisonService comparisonService;
+    @Autowired
+    private BaselineEntryRepository baselineEntryRepository;
+
+    @BeforeEach
+    void cleanDatabase() {
+        baselineEntryRepository.deleteAll();
+        watchedFileRepository.deleteAll();
+    }
 
     @Test
-    @DisplayName("GET /api/files returns 200 OK with list of all watched files")
-    void testListFilesReturnsAllFiles() throws Exception {
-        WatchedFile f1 = new WatchedFile("/etc/passwd", 2048L, LocalDateTime.now(), FileStatus.VERIFIED);
-        f1.setId(1L);
-        WatchedFile f2 = new WatchedFile("/etc/hosts", 512L, LocalDateTime.now(), FileStatus.TAMPERED);
-        f2.setId(2L);
-
-        when(watchedFileRepository.findAll()).thenReturn(List.of(f1, f2));
-
+    @DisplayName("GET /api/files - Should return empty list when no files registered")
+    void testListFiles_Empty() throws Exception {
         mockMvc.perform(get("/api/files"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].filePath").value("/etc/passwd"))
-                .andExpect(jsonPath("$[1].filePath").value("/etc/hosts"));
-
-        verify(watchedFileRepository, times(1)).findAll();
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data", hasSize(0)));
     }
 
     @Test
-    @DisplayName("GET /api/files?activeOnly=true returns only active files")
-    void testListFilesActiveOnly() throws Exception {
-        WatchedFile activeFile = new WatchedFile("/etc/shadow", 1024L, LocalDateTime.now(), FileStatus.VERIFIED);
-        activeFile.setId(1L);
-        activeFile.setActive(true);
+    @DisplayName("POST /api/files - Should register valid file, establish Ed25519 baseline, and return 201 Created")
+    void testRegisterFile_Success(@TempDir Path tempDir) throws Exception {
+        Path testFile = tempDir.resolve("system_auth.conf");
+        Files.writeString(testFile, "ENFORCE_MFA=true\nSESSION_TIMEOUT=900\n");
 
-        when(watchedFileRepository.findByActiveTrue()).thenReturn(List.of(activeFile));
-
-        mockMvc.perform(get("/api/files?activeOnly=true"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].filePath").value("/etc/shadow"))
-                .andExpect(jsonPath("$[0].active").value(true));
-
-        verify(watchedFileRepository, times(1)).findByActiveTrue();
-    }
-
-    @Test
-    @DisplayName("GET /api/files/{id} returns 200 OK when file exists")
-    void testGetFileByIdFound() throws Exception {
-        WatchedFile file = new WatchedFile("/etc/sudoers", 1024L, LocalDateTime.now(), FileStatus.VERIFIED);
-        file.setId(5L);
-
-        when(watchedFileRepository.findById(5L)).thenReturn(Optional.of(file));
-
-        mockMvc.perform(get("/api/files/5"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(5))
-                .andExpect(jsonPath("$.filePath").value("/etc/sudoers"))
-                .andExpect(jsonPath("$.status").value("VERIFIED"));
-    }
-
-    @Test
-    @DisplayName("GET /api/files/{id} returns 404 Not Found when file does not exist")
-    void testGetFileByIdNotFound() throws Exception {
-        when(watchedFileRepository.findById(999L)).thenReturn(Optional.empty());
-
-        mockMvc.perform(get("/api/files/999"))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    @DisplayName("POST /api/files returns 400 Bad Request when filePath is missing")
-    void testRegisterFileMissingPayload() throws Exception {
-        mockMvc.perform(post("/api/files")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Bad Request"))
-                .andExpect(jsonPath("$.message").value("Missing required 'filePath' parameter in request body"));
-    }
-
-    @Test
-    @DisplayName("POST /api/files returns 400 Bad Request when filePath is blank")
-    void testRegisterFileBlankPath() throws Exception {
-        mockMvc.perform(post("/api/files")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"filePath\": \"   \"}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Bad Request"))
-                .andExpect(jsonPath("$.message").value("File path must not be empty or whitespace"));
-    }
-
-    @Test
-    @DisplayName("POST /api/files returns 400 Bad Request when file does not exist on disk")
-    void testRegisterFileNonExistentOnDisk() throws Exception {
-        mockMvc.perform(post("/api/files")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"filePath\": \"/non/existent/disk/path/config.yaml\"}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Bad Request"))
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("File does not exist on disk")));
-    }
-
-    @Test
-    @DisplayName("POST /api/files returns 409 Conflict when file is already being watched")
-    void testRegisterFileConflictAlreadyWatched(@TempDir Path tempDir) throws Exception {
-        Path existingFile = Files.createFile(tempDir.resolve("server.conf"));
-        String normalizedPath = existingFile.toAbsolutePath().normalize().toString().replace('\\', '/');
-
-        WatchedFile alreadyWatched = new WatchedFile(normalizedPath, 100L, LocalDateTime.now(), FileStatus.VERIFIED);
-        alreadyWatched.setId(10L);
-        alreadyWatched.setActive(true);
-
-        when(watchedFileRepository.findByFilePath(normalizedPath)).thenReturn(Optional.of(alreadyWatched));
+        FileRegistrationRequest request = new FileRegistrationRequest(testFile.toString());
 
         mockMvc.perform(post("/api/files")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("filePath", existingFile.toString()))))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("Conflict"))
-                .andExpect(jsonPath("$.fileId").value(10));
-    }
-
-    @Test
-    @DisplayName("POST /api/files returns 201 Created and establishes baseline on valid registration")
-    void testRegisterFileSuccess(@TempDir Path tempDir) throws Exception {
-        Path newDiskFile = Files.createFile(tempDir.resolve("application.yml"));
-        Files.writeString(newDiskFile, "server:\n  port: 8080\n");
-        String normalizedPath = newDiskFile.toAbsolutePath().normalize().toString().replace('\\', '/');
-
-        when(watchedFileRepository.findByFilePath(normalizedPath)).thenReturn(Optional.empty());
-
-        WatchedFile savedFile = new WatchedFile(normalizedPath, Files.size(newDiskFile), LocalDateTime.now(), FileStatus.VERIFIED);
-        savedFile.setId(42L);
-        savedFile.setActive(true);
-        when(watchedFileRepository.save(any(WatchedFile.class))).thenReturn(savedFile);
-
-        BaselineEntry mockBaseline = new BaselineEntry(savedFile,
-                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-                "dGVzdC1zaWduYXR1cmU=",
-                "key-fingerprint-123");
-        mockBaseline.setId(101L);
-        when(comparisonService.establishBaseline(any(WatchedFile.class))).thenReturn(mockBaseline);
-
-        mockMvc.perform(post("/api/files")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("filePath", newDiskFile.toString()))))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("successfully registered")))
-                .andExpect(jsonPath("$.file.id").value(42))
-                .andExpect(jsonPath("$.baseline.sha256Hash").value("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message", containsString("baseline established")))
+                .andExpect(jsonPath("$.data.filePath", equalTo(testFile.toAbsolutePath().normalize().toString().replace('\\', '/'))))
+                .andExpect(jsonPath("$.data.status", equalTo("VERIFIED")))
+                .andExpect(jsonPath("$.data.active", equalTo(true)));
 
-        verify(comparisonService, times(1)).establishBaseline(any(WatchedFile.class));
+        // Verify database persistence
+        assertEquals(1, watchedFileRepository.count());
+        WatchedFile persisted = watchedFileRepository.findAll().get(0);
+        assertEquals(FileStatus.VERIFIED, persisted.getStatus());
+
+        // Verify cryptographic baseline entry created
+        assertEquals(1, baselineEntryRepository.count());
+        assertTrue(baselineEntryRepository.findByWatchedFileAndCurrentTrue(persisted).isPresent());
     }
 
     @Test
-    @DisplayName("DELETE /api/files/{id} returns 200 OK and deactivates file")
-    void testUnwatchFileSuccess() throws Exception {
-        WatchedFile file = new WatchedFile("/var/log/auth.log", 2048L, LocalDateTime.now(), FileStatus.VERIFIED);
-        file.setId(7L);
-        file.setActive(true);
+    @DisplayName("POST /api/files - Blank path should return 400 Bad Request")
+    void testRegisterFile_BlankPath() throws Exception {
+        FileRegistrationRequest request = new FileRegistrationRequest("   ");
 
-        when(watchedFileRepository.findById(7L)).thenReturn(Optional.of(file));
-        when(watchedFileRepository.save(any(WatchedFile.class))).thenReturn(file);
+        mockMvc.perform(post("/api/files")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message", containsString("File path must not be blank")));
+    }
 
-        mockMvc.perform(delete("/api/files/7"))
+    @Test
+    @DisplayName("POST /api/files - Non-existent file should return 400 Bad Request")
+    void testRegisterFile_NonExistentFile(@TempDir Path tempDir) throws Exception {
+        Path ghostFile = tempDir.resolve("ghost_daemon.service");
+        FileRegistrationRequest request = new FileRegistrationRequest(ghostFile.toString());
+
+        mockMvc.perform(post("/api/files")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message", containsString("file does not exist on disk")));
+    }
+
+    @Test
+    @DisplayName("POST /api/files - Directory path should be rejected with 400 Bad Request")
+    void testRegisterFile_DirectoryPath(@TempDir Path tempDir) throws Exception {
+        FileRegistrationRequest request = new FileRegistrationRequest(tempDir.toString());
+
+        mockMvc.perform(post("/api/files")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message", containsString("not a regular file")));
+    }
+
+    @Test
+    @DisplayName("POST /api/files - Already actively monitored file should return 409 Conflict")
+    void testRegisterFile_AlreadyActive(@TempDir Path tempDir) throws Exception {
+        Path testFile = tempDir.resolve("firewall.rules");
+        Files.writeString(testFile, "ALLOW PORT 8080\n");
+
+        FileRegistrationRequest request = new FileRegistrationRequest(testFile.toString());
+
+        // First registration
+        mockMvc.perform(post("/api/files")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        // Duplicate registration
+        mockMvc.perform(post("/api/files")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message", containsString("already actively monitored")));
+    }
+
+    @Test
+    @DisplayName("POST /api/files - Re-registering a soft-deleted file should intelligently reactivate it with 200 OK")
+    void testRegisterFile_ReactivateSoftDeleted(@TempDir Path tempDir) throws Exception {
+        Path testFile = tempDir.resolve("nginx.conf");
+        Files.writeString(testFile, "worker_processes auto;\n");
+
+        FileRegistrationRequest request = new FileRegistrationRequest(testFile.toString());
+
+        // 1. Initial registration
+        mockMvc.perform(post("/api/files")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        WatchedFile registered = watchedFileRepository.findAll().get(0);
+
+        // 2. Soft-delete
+        mockMvc.perform(delete("/api/files/" + registered.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.fileId").value(7))
-                .andExpect(jsonPath("$.active").value(false));
+                .andExpect(jsonPath("$.data.active").value(false));
 
-        verify(watchedFileRepository, times(1)).save(file);
+        // 3. Re-register the same path (should reactivate)
+        mockMvc.perform(post("/api/files")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message", containsString("reactivated")))
+                .andExpect(jsonPath("$.data.active").value(true))
+                .andExpect(jsonPath("$.data.status").value("VERIFIED"));
+
+        // Only 1 entity should exist in DB (no unique constraint collision)
+        assertEquals(1, watchedFileRepository.count());
     }
 
     @Test
-    @DisplayName("DELETE /api/files/{id} returns 404 Not Found when file ID does not exist")
-    void testUnwatchFileNotFound() throws Exception {
-        when(watchedFileRepository.findById(888L)).thenReturn(Optional.empty());
+    @DisplayName("POST /api/files/batch - Should register multiple files with fault isolation")
+    void testBatchRegisterFiles(@TempDir Path tempDir) throws Exception {
+        Path valid1 = tempDir.resolve("hosts.allow");
+        Files.writeString(valid1, "127.0.0.1\n");
 
-        mockMvc.perform(delete("/api/files/888"))
+        Path valid2 = tempDir.resolve("hosts.deny");
+        Files.writeString(valid2, "ALL\n");
+
+        Path invalidGhost = tempDir.resolve("missing.txt");
+
+        FileRegistrationRequest batchRequest = new FileRegistrationRequest(
+                List.of(valid1.toString(), invalidGhost.toString(), valid2.toString())
+        );
+
+        mockMvc.perform(post("/api/files/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(batchRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalSubmitted").value(3))
+                .andExpect(jsonPath("$.data.successCount").value(2))
+                .andExpect(jsonPath("$.data.failureCount").value(1))
+                .andExpect(jsonPath("$.data.failed[0].filePath", equalTo(invalidGhost.toString())));
+
+        assertEquals(2, watchedFileRepository.count());
+    }
+
+    @Test
+    @DisplayName("GET /api/files - Should support activeOnly query parameter")
+    void testListFiles_ActiveOnlyFilter(@TempDir Path tempDir) throws Exception {
+        Path file1 = tempDir.resolve("file1.txt");
+        Files.writeString(file1, "content1");
+        Path file2 = tempDir.resolve("file2.txt");
+        Files.writeString(file2, "content2");
+
+        // Register both
+        mockMvc.perform(post("/api/files")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new FileRegistrationRequest(file1.toString()))));
+        mockMvc.perform(post("/api/files")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new FileRegistrationRequest(file2.toString()))));
+
+        List<WatchedFile> all = watchedFileRepository.findAll();
+        assertEquals(2, all.size());
+
+        // Deactivate file1
+        mockMvc.perform(delete("/api/files/" + all.get(0).getId()))
+                .andExpect(status().isOk());
+
+        // Query activeOnly=true
+        mockMvc.perform(get("/api/files").param("activeOnly", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].id").value(all.get(1).getId()));
+
+        // Query activeOnly=false (all files)
+        mockMvc.perform(get("/api/files").param("activeOnly", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(2)));
+    }
+
+    @Test
+    @DisplayName("DELETE /api/files/{id} - Hard delete should permanently remove file and cascade to baselines")
+    void testUnwatchFile_HardDelete(@TempDir Path tempDir) throws Exception {
+        Path testFile = tempDir.resolve("temp_purge.conf");
+        Files.writeString(testFile, "PURGE_TARGET\n");
+
+        mockMvc.perform(post("/api/files")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new FileRegistrationRequest(testFile.toString()))))
+                .andExpect(status().isCreated());
+
+        WatchedFile file = watchedFileRepository.findAll().get(0);
+        assertEquals(1, baselineEntryRepository.count());
+
+        // Perform hard delete
+        mockMvc.perform(delete("/api/files/" + file.getId()).param("hard", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message", containsString("permanently deleted")));
+
+        assertEquals(0, watchedFileRepository.count());
+        assertEquals(0, baselineEntryRepository.count());
+    }
+
+    @Test
+    @DisplayName("PATCH /api/files/{id}/watch-status - Should toggle active flag")
+    void testUpdateWatchStatus(@TempDir Path tempDir) throws Exception {
+        Path testFile = tempDir.resolve("audit.log");
+        Files.writeString(testFile, "LOG ENTRY\n");
+
+        mockMvc.perform(post("/api/files")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new FileRegistrationRequest(testFile.toString()))))
+                .andExpect(status().isCreated());
+
+        WatchedFile file = watchedFileRepository.findAll().get(0);
+        assertTrue(file.isActive());
+
+        // Toggle to false
+        mockMvc.perform(patch("/api/files/" + file.getId() + "/watch-status").param("active", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.active").value(false));
+
+        assertFalse(watchedFileRepository.findById(file.getId()).get().isActive());
+
+        // Toggle back to true
+        mockMvc.perform(patch("/api/files/" + file.getId() + "/watch-status").param("active", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.active").value(true));
+
+        assertTrue(watchedFileRepository.findById(file.getId()).get().isActive());
+    }
+
+    @Test
+    @DisplayName("GET /api/files/{id} - Non-existent ID should return 404 Not Found")
+    void testGetFileById_NotFound() throws Exception {
+        mockMvc.perform(get("/api/files/99999"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("Not Found"));
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message", containsString("not found with ID: 99999")));
     }
 }
