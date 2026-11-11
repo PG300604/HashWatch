@@ -48,7 +48,7 @@
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
 | **S2-T1** | Backend | Priyanshu | ✅ **Done** | `src/main/java/com/hashwatch/service/ComparisonService.java`, `src/test/java/.../ComparisonServiceTest.java` | Implement `establishBaseline()`, `verifyFile()`, Triple-Lock canonical envelope, fingerprint-pinned verification, 5-state integrity machine, and alert deduplication. | `docs/DFD.md` (Level 2), `docs/TRD.md` |
 | **S2-T2** | Backend | Samarjeet | ✅ **Done** | `src/main/java/com/hashwatch/scheduler/MonitoringJob.java`, `config/SchedulerConfig.java` | Quartz trigger execution loop; handle job exceptions and scan timeouts. | `docs/TRD.md` (Section 2.1) |
-| **S2-T3** | DBMS & API | Riya | ⏳ **In Progress** | `src/main/java/com/hashwatch/repository/`, `entity/AlertEvent.java` | Implement alert queries (unresolved alerts, severity filters) and persistence tests. | `docs/ERD.md` (Table 3.3) |
+| **S2-T3** | DBMS & API | Riya | ✅ **Done** | `src/main/java/com/hashwatch/repository/AlertEventRepository.java`, `src/test/java/.../AlertEventRepositoryTest.java` | Implement enriched alert queries (unresolved + severity filters, event-type filters, date-range, per-file lookups, pagination, aggregation counts) and 18 comprehensive persistence tests. | `docs/ERD.md` (Table 3.3.1) |
 
 #### Sprint 2 Progress Summary
 
@@ -66,6 +66,11 @@
 - Built an exception boundary in `MonitoringJob` catching uncaught runtime/I/O exceptions, logging detailed diagnostics, and setting `setRefireImmediately(false)` to prevent tight retry storms.
 - Tuned `SchedulerConfig.java` with `withMisfireHandlingInstructionNextWithExistingCount()`, durable job identity, and recovery configuration.
 - Authored comprehensive test suite `MonitoringJobTest.java` (3/3 passing).
+
+##### 3. Alert Query Layer & Persistence Tests (`S2-T3` — Riya)
+- **Enriched `AlertEventRepository`** with 11 new Spring Data JPA derived query methods beyond the 4 existing ones (S1-T4), covering: combined severity + resolution filters, event-type classification, date-range searches, per-file alert lookups (by entity and by file path string for orphaned records), paginated result sets (`Page<AlertEvent>` with `Pageable`), and aggregation counts per severity/event-type.
+- **Dedicated `AlertEventRepositoryTest.java`** with 18 tests organized in 7 nested groups: Unresolved Alert Queries (3), Severity Filters (3), Event-Type Filters (3), Date-Range Queries (3), Per-File Lookups (2), Pagination (2), and Edge Cases (2). All tests run against H2 in-memory database with a 5-alert seed dataset spanning multiple severities, event types, and resolution states.
+- **Updated `docs/ERD.md`** — Added Section 3.3.1 documenting all 15 `AlertEventRepository` query methods with return types, descriptions, and downstream consumers (REST API, Dashboard, ComparisonService).
 
 ---
 
