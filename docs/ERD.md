@@ -101,6 +101,28 @@ Stores security alerts, mismatch warnings, and tampering logs.
 | `is_resolved` | `BOOLEAN` | No | Default `FALSE`, Composite Index `idx_alerts_unresolved(is_resolved, detected_at)` |
 | `detected_at` | `TIMESTAMP` | No | `@PrePersist` default `NOW()`, `updatable = false` |
 
+#### 3.3.1. `AlertEventRepository` Query Methods (Sprint 2: S2-T3)
+
+The following Spring Data JPA derived query methods are defined in [`AlertEventRepository.java`](../src/main/java/com/hashwatch/repository/AlertEventRepository.java) to support alert triage, filtering, and dashboard analytics:
+
+| Query Method | Return Type | Description | Used By |
+| :--- | :--- | :--- | :--- |
+| `findByResolvedFalseOrderByDetectedAtDesc()` | `List<AlertEvent>` | All unresolved alerts, newest first | ComparisonService alert gating, Dashboard |
+| `findTop50ByOrderByDetectedAtDesc()` | `List<AlertEvent>` | 50 most recent alerts (any status) | Dashboard recent-alerts widget |
+| `findBySeverity(severity)` | `List<AlertEvent>` | All alerts of a given severity level | REST API filter endpoint |
+| `countByResolvedFalse()` | `long` | Count of unresolved alerts | Dashboard badge counter |
+| `findByResolvedFalseAndSeverityOrderByDetectedAtDesc(severity)` | `List<AlertEvent>` | Unresolved alerts of a specific severity, newest first | Dashboard triage view (CRITICAL/HIGH filter) |
+| `findBySeverityAndResolvedFalse(severity)` | `List<AlertEvent>` | Unresolved alerts matching severity | REST API combined filter |
+| `findByEventType(eventType)` | `List<AlertEvent>` | All alerts of a given event classification | REST API event-type filter |
+| `findByEventTypeAndSeverity(eventType, severity)` | `List<AlertEvent>` | Alerts matching both event type and severity | Fine-grained classification analytics |
+| `findByDetectedAtBetween(start, end)` | `List<AlertEvent>` | Alerts within a time window (inclusive) | Audit reports, periodic summaries |
+| `findByWatchedFileOrderByDetectedAtDesc(watchedFile)` | `List<AlertEvent>` | Alerts linked to a specific WatchedFile entity | File detail page alert history |
+| `findByFilePathOrderByDetectedAtDesc(filePath)` | `List<AlertEvent>` | Alerts matching a file path string (survives parent deletion) | Orphaned alert lookup |
+| `findByResolvedFalse(Pageable)` | `Page<AlertEvent>` | Paginated unresolved alerts | REST API paginated listing |
+| `findBySeverity(severity, Pageable)` | `Page<AlertEvent>` | Paginated severity-filtered alerts | REST API paginated listing |
+| `countBySeverity(severity)` | `long` | Count of alerts per severity level | Dashboard summary cards |
+| `countByEventType(eventType)` | `long` | Count of alerts per event classification | Classification analytics |
+
 ---
 
 ## 4. Reference PostgreSQL DDL Script
