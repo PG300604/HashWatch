@@ -130,3 +130,17 @@
 | **S6-T1** | Analysis & DevOps | Priyanshu | `python-analysis/charts/`, Final Report | Collate benchmark figures against published research papers (snaproot, Ed25519 reference). | Final Synopsis & Report |
 | **S6-T2** | Frontend & UI | Riya | `src/main/resources/` | UI polish, accessibility checks, dark-mode enhancements, and demo preparation. | User Manual |
 | **S6-T3** | Backend & Cryptology | Samarjeet | `src/main/java/com/hashwatch/` | Corner-case hardening: missing files, locked files, unreadable directory permissions. | `docs/TRD.md` |
+
+#### Sprint 6 Implementation Highlights & Deliverables Completed
+
+##### 1. Operator User Manual & Administration Runbook (`S6-T2` — Riya)
+- Authored comprehensive documentation in `docs/USER_MANUAL.md`.
+- Complete guide covering system architecture, dual-profile H2/PostgreSQL deployment, operator dashboard walkthrough, incident triage center, 5-state integrity lifecycle, out-of-band scan triggers, REST API automation cURL cheatsheet, and troubleshooting diagnostics.
+
+##### 2. Final Academic Project Report (`SC-3` — All Members / Riya)
+- Authored comprehensive college final-year engineering project report in `docs/FINAL_ACADEMIC_REPORT.md` (Asansol Engineering College, MAKAUT CSBS Department).
+- Covers Executive Summary/Abstract, Threat Model & Literature Review (comparative matrix with Tripwire, OSSEC, Samhain, AIDE), Mathematical Cryptographic Model (streaming SHA-256 collision resistance + Ed25519 Curve25519 signature scheme), Triple-Lock Canonical Envelope specification, 5-state integrity verification state machine, empirical benchmarks (1,916 MB/s throughput, 18,500+ verifications/sec, $\mathcal{O}(1)$ bounded memory), and complete 80+ test suite breakdown.
+
+##### 3. Project Defense & Viva Voce Presentation Deck (`SC-4` — All Members / Riya)
+- Authored 15-slide defense presentation deck in `docs/PROJECT_DEFENSE_PRESENTATION.md`.
+- Structured with executive slide titles, bullet points, mermaid architecture flows, detailed Speaker Notes for viva presentation, and Top 10 Examiner Viva Voce Q&A Cheat Sheet with authoritative technical answers.
