@@ -103,7 +103,15 @@ In modern enterprise and cloud computing infrastructures, unauthorized modificat
 
 ## 6. Success Metrics & Acceptance Criteria
 
-1. **Detection Accuracy:** 100% detection rate when 1 single bit in a watched file is modified.
-2. **Tamper-Evident Baselines:** Any unauthorized direct modification of the database baseline table is immediately flagged with `SIGNATURE_INVALID`.
-3. **Detection Latency:** Time from file modification to alert generation is bounded by `Polling_Interval + Processing_Time` (typically < 30.5 seconds).
-4. **Clean Code & Test Coverage:** Core cryptographic and comparison services must achieve > 90% unit test coverage.
+1. **Detection Accuracy (100% Single-Bit Sensitivity):**
+   - 100% detection rate when 1 single bit in a watched file is modified (verified by `TamperDetectionIntegrationTest.testSingleBitFlipDetectionSensitivity`).
+   - Avalanche effect in SHA-256 ensures completely distinct digest when any byte or bit is modified.
+2. **Tamper-Evident Baselines (Zero-Trust Envelope Verification):**
+   - Any unauthorized direct modification of the database baseline table (digest or signature) is immediately flagged with `SIGNATURE_INVALID` and triggers a `CRITICAL` alert (verified by `testDatabaseTamperingAndSignatureRejection`).
+   - Baseline digital signature envelope (`HashWatch:v1:<path>:<hash>:<size>`) prevents cross-file record swapping and cut-and-paste attacks.
+3. **Detection Latency & Resilient Scheduling:**
+   - Time from file modification to alert generation is bounded by `Polling_Interval + Processing_Time` (typically < 30.5 seconds).
+   - Quartz scheduler executes periodic batch scans with per-file fault isolation and state-transition alert deduplication.
+4. **Clean Code & Comprehensive Test Coverage:**
+   - Core cryptographic, comparison, and controller services achieve > 90% unit and integration test coverage.
+   - Comprehensive end-to-end test suite (`TamperDetectionIntegrationTest`) validates the full security lifecycle: baseline establishment, malicious tampering injection, missing file detection, alert deduplication, and authorized re-baselining.

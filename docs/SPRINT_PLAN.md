@@ -120,6 +120,18 @@
 | **S5-T3** | Analysis | Samarjeet | `python-analysis/latency_analysis.py` | Measure end-to-end detection latency distributions; compute mean, median, P95 metrics. | `docs/RESEARCH_BENCHMARKS.md` |
 | **S5-T4** | Cryptology & API | Riya | `src/test/java/` | Integration testing of tamper detection when malicious bytes are injected into watched files. | `docs/PRD.md` (Testing) |
 
+#### Sprint 5 Implementation Highlights & Deliverables Completed
+
+##### Cryptographic Tamper Injection & Recovery Integration Suite (`S5-T4` — Riya)
+- Authored comprehensive end-to-end integration test suite in `src/test/java/com/hashwatch/integration/TamperDetectionIntegrationTest.java` (7/7 tests passing).
+- **Byte-Level Malicious Tamper Injection:** Validated full lifecycle detection when unauthorized bytes are appended to a monitored file; asserts transition to `TAMPERED` status and creation of `UNAUTHORIZED_MODIFICATION` alert with expected vs. actual hash diff.
+- **Single-Bit Flip Sensitivity:** Verified 100% detection rate when inverting a single bit (`^= 0x01`) in a 4,096-byte binary payload, proving SHA-256 avalanche effect behavior.
+- **Zero-Trust Baseline Signature Defense:** Simulated an attacker tampering directly with the database baseline table; verified Ed25519 signature rejection, transition to `SIGNATURE_INVALID` state, and issuance of `CRITICAL` alert.
+- **File Deletion Detection:** Validated detection when a monitored file is removed from disk, transitioning status to `MISSING` with `MISSING_FILE` alert.
+- **Authorized Re-baselining:** Tested SecOps re-baselining workflow, ensuring older baseline snapshots are safely retired (`isCurrent = false`), new Ed25519 signatures are generated, and file status is cleanly restored to `VERIFIED`.
+- **Alert Deduplication:** Verified that subsequent Quartz polling runs do not generate redundant alert spam for unchanged unresolved incidents.
+- **Inactive File Exclusion:** Confirmed that deactivated files are cleanly bypassed during verification sweeps.
+
 ---
 
 ### Sprint 6: System Hardening, Academic Verification & Final Deliverables
