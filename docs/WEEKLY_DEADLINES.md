@@ -33,7 +33,7 @@
 - [x] **S3-T1 (Riya & Priyanshu — API):** Implemented `FileController.java` (batch registration, OS readability checks, 100MB cap, soft-delete reactivation) and `BaselineController.java` (baseline feed, re-baseline triggers, public key export). Passed all MockMvc integration test suites (`FileControllerTest`, `BaselineControllerTest`).
 - [x] **SA-5 (Riya — Docs):** Documented OpenAPI / REST endpoints contract in `docs/TRD.md` Section 5 covering request/response JSON schemas, query parameters, error responses, and HTTP status codes.
 - [x] **S3-T2 (Priyanshu & Riya — API & Backend):** Implemented `AlertController.java` (unresolved alerts, 50 recent alerts, `/resolve`, `/scan-now`) and verified with `AlertControllerTest`.
-- [ ] **S3-T3 (Samarjeet — Cryptology):** Handle key rotation, PEM/DER encoding, and detached signature validation.
+- [x] **S3-T3 (Samarjeet — Cryptology):** Implement Ed25519 key rotation with timestamped archives, standard RFC 7468 PEM/DER export and parsing, and detached signature validation in `SigningService.java` (12/12 unit tests passing).
 
 > [!IMPORTANT]
 > All Pull Requests for the sprint must be submitted by **Saturday 18:00 IST** to allow review and resolution before the Sunday cutoff.

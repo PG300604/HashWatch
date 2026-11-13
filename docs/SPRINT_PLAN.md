@@ -79,9 +79,11 @@
 
 | Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
 | **S3-T1** | API | Riya & Priyanshu | ✅ **Done** | `src/main/java/com/hashwatch/controller/FileController.java`, `BaselineController.java`, `src/test/java/.../controller/` | Implement RESTful endpoints for file registration (batch and single), re-baselining, deactivation, and public key retrieval; pass MockMvc test suites. | `docs/TRD.md` (Section 5) |
 | **S3-T2** | API & Backend | Priyanshu & Riya | ✅ **Done** | `src/main/java/com/hashwatch/controller/AlertController.java`, `AlertControllerTest.java` | Implement alert triage endpoints (`/api/alerts`, `/resolve`, `/scan-now`) and test suite. | `docs/TRD.md` (Alerts API) |
-| **S3-T3** | Cryptology | Samarjeet | ⏳ **In Progress** | `src/main/java/com/hashwatch/service/SigningService.java` | Handle key rotation, PEM/DER encoding, and detached signature validation. | `docs/TRD.md` (Key Storage) |
+| **S3-T3** | Cryptology | Samarjeet | ✅ **Done** | `src/main/java/com/hashwatch/service/SigningService.java`, `src/test/java/.../SigningServiceTest.java` | Handle key rotation with timestamped archives, RFC 7468 PEM/DER export and parsing, and detached signature validation. | `docs/TRD.md` (Key Storage) |
 
 #### Sprint 3 Progress Summary
 
@@ -92,10 +94,17 @@
   - Readability & existence validation via `Files.isReadable(path)` preventing registration of unreadable files.
   - 100 MB synchronous registration safety cap (`MAX_SYNC_REGISTRATION_SIZE_BYTES`) preventing JVM thread starvation during baseline establishment.
   - Soft-delete reactivation: Automatically reactivates files marked `SOFT_DELETED` without database collision.
-- **`BaselineController.java` (`/api/baselines`):** Complete implementation of `GET /api/baselines` (active baselines feed), `GET /api/baselines/public-key` (exports Base64 public key and SHA-256 fingerprint for third-party audit verification), `POST /api/baselines/generate/{fileId}` (regenerates and resigns baseline for single file), and `POST /api/baselines/generate-all` (batch re-baseline across all active files).
+- **`BaselineController.java` (`/api/baselines`):** Complete implementation of `GET /api/baselines` (active baselines feed), `GET /api/baselines/public-key` (exports Base64 public key, PEM public key, and SHA-256 fingerprint for third-party audit verification), `POST /api/baselines/generate/{fileId}` (regenerates and resigns baseline for single file), and `POST /api/baselines/generate-all` (batch re-baseline across all active files).
 - **`AlertController.java` (`/api/alerts`):** Complete implementation of `GET /api/alerts` (unresolved alerts, newest first), `GET /api/alerts/all` (top 50 recent alerts), `POST /api/alerts/{id}/resolve` (mark alert investigated & resolved), and `POST /api/alerts/scan-now` (trigger immediate out-of-band integrity check).
 - **MockMvc Test Suites:** Comprehensive tests in `FileControllerTest.java`, `BaselineControllerTest.java`, and `AlertControllerTest.java` verifying HTTP 200, 201, 400 Bad Request, 404 Not Found, and 409 Conflict scenarios.
 - **OpenAPI / REST Contract (`docs/TRD.md` Section 5):** Documented complete endpoint contracts with JSON request/response bodies, query parameters, and error problem models.
+
+##### 2. Cryptology & Key Lifecycle (`S3-T3` — Samarjeet)
+- **Key Rotation (`rotateKeys(boolean backupPrevious)`):** Automated key rotation mechanism that safely archives the existing keypair under `keys/archive/<timestamp>/` and immediately replaces disk and in-memory key state with a freshly generated Ed25519 keypair. Returns the new SHA-256 fingerprint for baseline re-pinning.
+- **RFC 7468 PEM & DER Encoding Utilities:** Implemented standard export and parsing for public and private keys (`getPublicKeyPem()`, `getPrivateKeyPem()`, `exportPublicKeyToPem()`, `exportPrivateKeyToPem()`, `loadPublicKeyFromPem()`, `loadPrivateKeyFromPem()`, and DER equivalents).
+- **Detached Signature Validation:** Added `verifyDetached(data, signature, PublicKey)`, `verifyDetached(data, signature, base64PublicKey)`, and `verifyDetachedPem(data, signature, pemPublicKey)` enabling independent historical baseline verification without relying on active in-memory keys.
+- **REST Key Endpoint Integration:** Updated `BaselineController` (`/api/baselines/public-key`) to return algorithm, format, Base64 public key, PEM public key, and active fingerprint.
+- **Automated Unit Testing:** Expanded `SigningServiceTest.java` to 12 automated test cases (100% passing).
 
 ---
 
