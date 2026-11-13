@@ -25,6 +25,10 @@ import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 /**
  * =============================================================================
@@ -66,6 +70,7 @@ public class SigningService {
     private String keyDirectoryPath;
 
     private KeyPair keyPair;
+    private final Map<String, PublicKey> historicalKeyCache = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
@@ -154,6 +159,11 @@ public class SigningService {
         String previousFingerprint = (this.keyPair != null && this.keyPair.getPublic() != null)
                 ? getKeyFingerprint()
                 : "NONE";
+
+        // Cache historical key in-memory before rotation (supports both backupPrevious=true and false)
+        if (this.keyPair != null && this.keyPair.getPublic() != null) {
+            historicalKeyCache.put(previousFingerprint.toLowerCase(), this.keyPair.getPublic());
+        }
 
         // Step 1: Safely archive existing keys into keys/archive/<timestamp>/
         if (backupPrevious && Files.exists(privateKeyFile) && Files.exists(publicKeyFile)) {
@@ -493,8 +503,67 @@ public class SigningService {
     }
 
     /**
+     * Resolves a public key by its fingerprint (publicKeyId), checking the active key,
+     * the in-memory historical cache, and archived keys on disk under keys/archive/.
+     *
+     * @param fingerprint the 64-char SHA-256 fingerprint to resolve
+     * @return Optional containing the resolved PublicKey if found
+     */
+    public Optional<PublicKey> resolvePublicKeyByFingerprint(String fingerprint) {
+        if (fingerprint == null || fingerprint.isBlank()) {
+            return Optional.empty();
+        }
+        String normalizedFingerprint = fingerprint.trim().toLowerCase();
+
+        // 1. Check active key
+        if (keyPair != null && keyPair.getPublic() != null) {
+            String activeFingerprint = getKeyFingerprint();
+            if (activeFingerprint.equalsIgnoreCase(normalizedFingerprint)) {
+                return Optional.of(keyPair.getPublic());
+            }
+        }
+
+        // 2. Check in-memory historical cache
+        PublicKey cached = historicalKeyCache.get(normalizedFingerprint);
+        if (cached != null) {
+            return Optional.of(cached);
+        }
+
+        // 3. Scan disk archive: keys/archive/<timestamp>/ed25519_public.pub
+        Path dir = Paths.get(keyDirectoryPath);
+        Path archiveBase = dir.resolve(ARCHIVE_DIRECTORY);
+        if (Files.exists(archiveBase) && Files.isDirectory(archiveBase)) {
+            try (Stream<Path> archiveFolders = Files.list(archiveBase)) {
+                for (Path folder : archiveFolders.toList()) {
+                    Path pubFile = folder.resolve(PUBLIC_KEY_FILENAME);
+                    if (Files.exists(pubFile)) {
+                        try {
+                            String pubBase64 = Files.readString(pubFile).trim();
+                            byte[] pubBytes = Base64.getDecoder().decode(pubBase64);
+                            PublicKey pubKey = loadPublicKeyFromDer(pubBytes);
+                            String fp = computeFingerprint(pubKey).toLowerCase();
+                            historicalKeyCache.put(fp, pubKey);
+                            if (fp.equalsIgnoreCase(normalizedFingerprint)) {
+                                return Optional.of(pubKey);
+                            }
+                        } catch (Exception ex) {
+                            log.debug("Skipping unreadable/corrupted archived key at {}: {}", pubFile, ex.getMessage());
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                log.warn("Failed to scan key archive directory: {}", e.getMessage());
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    /**
      * Verifies data against a signature using the public key and asserts that
      * the signature was produced under the expected public key fingerprint.
+     * If the fingerprint does not match the active key, it attempts to resolve
+     * historical archived keys to preserve verification across key rotations.
      *
      * @param data original hash/canonical payload data
      * @param base64Signature Base64-encoded signature
@@ -506,12 +575,23 @@ public class SigningService {
             log.warn("Missing expectedPublicKeyId during verification");
             return false;
         }
+        String normalizedExpectedId = expectedPublicKeyId.trim().toLowerCase();
         String currentFingerprint = getKeyFingerprint();
-        if (!currentFingerprint.equalsIgnoreCase(expectedPublicKeyId.trim())) {
-            log.warn("Public key fingerprint mismatch! Expected: {}, Current: {}", expectedPublicKeyId, currentFingerprint);
-            return false;
+
+        if (currentFingerprint.equalsIgnoreCase(normalizedExpectedId)) {
+            return verify(data, base64Signature);
         }
-        return verify(data, base64Signature);
+
+        // Resolve historical public keys before rejecting baselines after key rotation
+        Optional<PublicKey> historicalKey = resolvePublicKeyByFingerprint(normalizedExpectedId);
+        if (historicalKey.isPresent()) {
+            log.info("Verifying baseline using historical public key for fingerprint {}", expectedPublicKeyId);
+            return verifyDetached(data, base64Signature, historicalKey.get());
+        }
+
+        log.warn("Public key fingerprint mismatch! Expected: {}, Current: {}, and no matching archived key found",
+                expectedPublicKeyId, currentFingerprint);
+        return false;
     }
 
     /**

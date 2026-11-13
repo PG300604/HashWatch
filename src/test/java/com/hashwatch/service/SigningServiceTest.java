@@ -191,11 +191,15 @@ class SigningServiceTest {
         String newSignature = signingService.sign(testPayload);
         assertTrue(signingService.verify(testPayload, newSignature, newFingerprint));
 
+        // Historical baseline verification succeeds because SigningService resolves the historical key
+        assertTrue(signingService.verify(testPayload, signatureUnderOldKey, originalFingerprint),
+                "Historical baseline signature must remain verifiable via automated historical key lookup");
+
         // The old signature cannot be verified using the active new key's pinned fingerprint
         assertFalse(signingService.verify(testPayload, signatureUnderOldKey, signingService.getKeyFingerprint()),
                 "Old signature should fail verification against active rotated key");
 
-        // But detached validation against the original public key still succeeds (historical validation)
+        // Detached validation against the original public key also succeeds
         assertTrue(signingService.verifyDetached(testPayload, signatureUnderOldKey, originalPublicKey),
                 "Historical baseline signature must remain verifiable via detached validation");
     }
@@ -300,6 +304,33 @@ class SigningServiceTest {
         assertFalse(signingService.verifyDetached(testData, signature, (String) null));
         assertFalse(signingService.verifyDetached(testData, signature, "invalid-base64-key!@#"));
         assertFalse(signingService.verifyDetachedPem(testData, signature, "invalid-pem-content"));
+    }
+
+    @Test
+    @DisplayName("S3-T3: resolvePublicKeyByFingerprint should resolve active, in-memory, and disk archived keys")
+    void testResolvePublicKeyByFingerprint() throws Exception {
+        signingService.ensureKeysLoaded();
+        String initialFp = signingService.getKeyFingerprint();
+        PublicKey initialPubKey = signingService.getKeyPair().getPublic();
+
+        // 1. Resolve active key
+        assertTrue(signingService.resolvePublicKeyByFingerprint(initialFp).isPresent());
+        assertEquals(initialPubKey, signingService.resolvePublicKeyByFingerprint(initialFp).get());
+
+        // 2. Rotate keys with archiving
+        String rotatedFp = signingService.rotateKeys(true);
+        PublicKey rotatedPubKey = signingService.getKeyPair().getPublic();
+
+        // 3. Both rotated key and historical archived key should be resolvable
+        assertTrue(signingService.resolvePublicKeyByFingerprint(rotatedFp).isPresent());
+        assertTrue(signingService.resolvePublicKeyByFingerprint(initialFp).isPresent());
+        assertEquals(initialPubKey, signingService.resolvePublicKeyByFingerprint(initialFp).get());
+        assertEquals(rotatedPubKey, signingService.resolvePublicKeyByFingerprint(rotatedFp).get());
+
+        // 4. Unknown/null/blank keys return empty
+        assertTrue(signingService.resolvePublicKeyByFingerprint(null).isEmpty());
+        assertTrue(signingService.resolvePublicKeyByFingerprint("   ").isEmpty());
+        assertTrue(signingService.resolvePublicKeyByFingerprint("0000000000000000000000000000000000000000000000000000000000000000").isEmpty());
     }
 
     @Test
