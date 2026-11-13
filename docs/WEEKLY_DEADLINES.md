@@ -26,5 +26,13 @@
 - [x] **S2-T2 (Samarjeet — Backend):** Implement Quartz trigger execution loop, scan timeout handling, and exception resilience in `MonitoringJob.java` & `SchedulerConfig.java` (3/3 tests passing).
 - [ ] **S2-T3 (Riya — DBMS & API):** Implement alert queries (unresolved alerts, severity filters) in `AlertEventRepository` and persistence tests.
 
+---
+
+## Sprint 3 Task Status Checklist
+
+- [ ] **S3-T1 (Riya — API):** Implement file registration, re-baselining endpoints in `FileController.java` & `BaselineController.java`.
+- [ ] **S3-T2 (Priyanshu — API & Backend):** Implement alert triage endpoints (`/api/alerts`, `/resolve`, `/scan-now`) in `AlertController.java`.
+- [x] **S3-T3 (Samarjeet — Cryptology):** Implement Ed25519 key rotation with timestamped archives, standard RFC 7468 PEM/DER export and parsing, and detached signature validation in `SigningService.java` (12/12 unit tests passing).
+
 > [!IMPORTANT]
 > All Pull Requests for the sprint must be submitted by **Saturday 18:00 IST** to allow review and resolution before the Sunday cutoff.

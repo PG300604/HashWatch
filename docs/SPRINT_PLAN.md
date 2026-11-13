@@ -72,11 +72,20 @@
 ### Sprint 3: REST API & Baseline Management Layer
 **Focus:** API, Backend, Cryptology.
 
-| Task ID | Domain | Assigned To | Folder / Target Files | Task Description | Doc Update Required |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **S3-T1** | API | Riya | `src/main/java/com/hashwatch/controller/FileController.java`, `BaselineController.java` | Implement endpoints for file registration, re-baselining, and public key retrieval. | `docs/TRD.md` (API Spec) |
-| **S3-T2** | API & Backend | Priyanshu | `src/main/java/com/hashwatch/controller/AlertController.java` | Implement alert triage endpoints (`/api/alerts`, `/resolve`, `/scan-now`). | `docs/TRD.md` (Alerts API) |
-| **S3-T3** | Cryptology | Samarjeet | `src/main/java/com/hashwatch/service/SigningService.java` | Handle key rotation, PEM/DER encoding, and detached signature validation. | `docs/TRD.md` (Key Storage) |
+| Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| **S3-T1** | API | Riya | ⏳ **In Progress** | `src/main/java/com/hashwatch/controller/FileController.java`, `BaselineController.java` | Implement endpoints for file registration, re-baselining, and public key retrieval. | `docs/TRD.md` (API Spec) |
+| **S3-T2** | API & Backend | Priyanshu | ⏳ **In Progress** | `src/main/java/com/hashwatch/controller/AlertController.java` | Implement alert triage endpoints (`/api/alerts`, `/resolve`, `/scan-now`). | `docs/TRD.md` (Alerts API) |
+| **S3-T3** | Cryptology | Samarjeet | ✅ **Done** | `src/main/java/com/hashwatch/service/SigningService.java`, `src/test/java/.../SigningServiceTest.java` | Handle key rotation with timestamped archives, RFC 7468 PEM/DER export and parsing, and detached signature validation. | `docs/TRD.md` (Key Storage) |
+
+#### Sprint 3 Progress Summary
+
+##### 1. Cryptology & Key Lifecycle (`S3-T3` — Samarjeet)
+- **Key Rotation (`rotateKeys(boolean backupPrevious)`):** Automated key rotation mechanism that safely archives the existing keypair under `keys/archive/<timestamp>/` and immediately replaces disk and in-memory key state with a freshly generated Ed25519 keypair. Returns the new SHA-256 fingerprint for baseline re-pinning.
+- **RFC 7468 PEM & DER Encoding Utilities:** Implemented standard export and parsing for public and private keys (`getPublicKeyPem()`, `getPrivateKeyPem()`, `exportPublicKeyToPem()`, `exportPrivateKeyToPem()`, `loadPublicKeyFromPem()`, `loadPrivateKeyFromPem()`, and DER equivalents).
+- **Detached Signature Validation:** Added `verifyDetached(data, signature, PublicKey)`, `verifyDetached(data, signature, base64PublicKey)`, and `verifyDetachedPem(data, signature, pemPublicKey)` enabling independent historical baseline verification without relying on active in-memory keys.
+- **REST Key Endpoint Integration:** Updated `BaselineController` (`/api/baselines/public-key`) to return algorithm, Base64 public key, PEM public key, and active fingerprint.
+- **Automated Unit Testing:** Expanded `SigningServiceTest.java` to 12 automated test cases (100% passing).
 
 ---
 

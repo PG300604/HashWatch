@@ -57,10 +57,11 @@ public class BaselineController {
      */
     @GetMapping("/public-key")
     public Map<String, String> getPublicKey() {
-        // TODO [Sprint 3 - Cryptology & API]: Assigned to Riya / Priyanshu
         return Map.of(
                 "algorithm", "Ed25519",
-                "publicKey", signingService.getPublicKeyBase64()
+                "publicKey", signingService.getPublicKeyBase64(),
+                "publicKeyPem", signingService.getPublicKeyPem(),
+                "fingerprint", signingService.getKeyFingerprint()
         );
     }
 
