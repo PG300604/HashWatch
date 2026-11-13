@@ -24,7 +24,16 @@
 
 - [x] **S2-T1 (Priyanshu — Backend):** Implemented `ComparisonService.java` with Triple-Lock canonical envelope (`HashWatch:v1:<path>:<hash>:<size>`), fingerprint-pinned Ed25519 verification in `SigningService.java`, 5-state integrity machine (`UNTRACKED`, `VERIFIED`, `TAMPERED`, `MISSING`, `SIGNATURE_INVALID`), and alert deduplication. All 10 tests in `ComparisonServiceTest.java` passing.
 - [x] **S2-T2 (Samarjeet — Backend):** Implement Quartz trigger execution loop, scan timeout handling, and exception resilience in `MonitoringJob.java` & `SchedulerConfig.java` (3/3 tests passing).
-- [ ] **S2-T3 (Riya — DBMS & API):** Implement alert queries (unresolved alerts, severity filters) in `AlertEventRepository` and persistence tests.
+- [x] **S2-T3 (Riya — DBMS & API):** Implement alert queries (unresolved alerts, severity filters, event-type filters, date-range, per-file lookups, pagination, aggregation counts) in `AlertEventRepository` and comprehensive persistence tests in `AlertEventRepositoryTest` (18 tests passing).
+
+---
+
+## Sprint 3 Task Status Checklist
+
+- [x] **S3-T1 (Riya & Priyanshu — API):** Implemented `FileController.java` (batch registration, OS readability checks, 100MB cap, soft-delete reactivation) and `BaselineController.java` (baseline feed, re-baseline triggers, public key export). Passed all MockMvc integration test suites (`FileControllerTest`, `BaselineControllerTest`).
+- [x] **SA-5 (Riya — Docs):** Documented OpenAPI / REST endpoints contract in `docs/TRD.md` Section 5 covering request/response JSON schemas, query parameters, error responses, and HTTP status codes.
+- [x] **S3-T2 (Priyanshu & Riya — API & Backend):** Implemented `AlertController.java` (unresolved alerts, 50 recent alerts, `/resolve`, `/scan-now`) and verified with `AlertControllerTest`.
+- [ ] **S3-T3 (Samarjeet — Cryptology):** Handle key rotation, PEM/DER encoding, and detached signature validation.
 
 ---
 
