@@ -35,5 +35,32 @@
 - [x] **S3-T2 (Priyanshu & Riya — API & Backend):** Implemented `AlertController.java` (unresolved alerts, 50 recent alerts, `/resolve`, `/scan-now`) and verified with `AlertControllerTest`.
 - [ ] **S3-T3 (Samarjeet — Cryptology):** Handle key rotation, PEM/DER encoding, and detached signature validation.
 
+---
+
+## Sprint 4 Task Status Checklist
+
+- [x] **S4-T1 (Riya — Frontend):** Build responsive dashboard UI with system health status banner, 4 metric cards, file registration form, inventory table, and dark-theme CSS (`dashboard.html`, `style.css`).
+- [x] **S4-T2 (Riya — Frontend & API):** Build incident triage UI (`alerts.html`), async JavaScript integration with toast notifications (`app.js`), model binding (`DashboardViewController.java`), and MockMvc test suite (`DashboardViewControllerTest.java`, 4/4 passing).
+- [x] **S4-T3 (Samarjeet — Backend & DBMS):** Model attribute aggregation (count queries, alert summaries) for Thymeleaf rendering.
+
+---
+
+## Sprint 5 Task Status Checklist
+
+- [ ] **S5-T1 (Priyanshu — DevOps):** Multi-stage Docker build for Spring Boot app and GitHub Actions automated CI testing (`.github/workflows/ci.yml`, `Dockerfile`).
+- [ ] **S5-T2 (Priyanshu — Analysis):** Benchmark SHA-256 throughput vs file size & Ed25519 signs/sec; produce comparison plots (`python-analysis/overhead_benchmark.py`).
+- [ ] **S5-T3 (Samarjeet — Analysis):** Measure end-to-end detection latency distributions; compute mean, median, P95 metrics (`python-analysis/latency_analysis.py`).
+- [x] **S5-T4 (Riya — Cryptology & API):** Implement end-to-end integration test suite verifying tamper detection, single-bit flip sensitivity, database signature invalidation, missing files, and authorized re-baselining (`TamperDetectionIntegrationTest.java`, 7/7 passing).
+
+---
+
+## Sprint 6 Task Status Checklist
+
+- [x] **S6-T1 (Priyanshu — Analysis & DevOps):** Collate benchmark figures against published research papers (snaproot, Ed25519 reference).
+- [x] **S6-T2 (Riya — Frontend & UI):** Author Operator User Manual and administration runbook (`docs/USER_MANUAL.md`).
+- [x] **SC-3 (All Members / Riya — Academic Report):** Final Academic Project Report for Asansol Engineering College / MAKAUT CSBS Department (`docs/FINAL_ACADEMIC_REPORT.md`).
+- [x] **SC-4 (All Members / Riya — Defense Deck):** 15-Slide Project Defense & Viva Voce Presentation Deck with Speaker Notes and Examiner Q&A Cheat Sheet (`docs/PROJECT_DEFENSE_PRESENTATION.md`).
+- [x] **S6-T3 (Samarjeet — Backend & Cryptology):** Corner-case hardening: missing files, locked files, unreadable directory permissions.
+
 > [!IMPORTANT]
 > All Pull Requests for the sprint must be submitted by **Saturday 18:00 IST** to allow review and resolution before the Sunday cutoff.
