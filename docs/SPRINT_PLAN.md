@@ -79,8 +79,6 @@
 
 | Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
-| Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
-| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
 | **S3-T1** | API | Riya & Priyanshu | ✅ **Done** | `src/main/java/com/hashwatch/controller/FileController.java`, `BaselineController.java`, `src/test/java/.../controller/` | Implement RESTful endpoints for file registration (batch and single), re-baselining, deactivation, and public key retrieval; pass MockMvc test suites. | `docs/TRD.md` (Section 5) |
 | **S3-T2** | API & Backend | Priyanshu & Riya | ✅ **Done** | `src/main/java/com/hashwatch/controller/AlertController.java`, `AlertControllerTest.java` | Implement alert triage endpoints (`/api/alerts`, `/resolve`, `/scan-now`) and test suite. | `docs/TRD.md` (Alerts API) |
 | **S3-T3** | Cryptology | Samarjeet | ✅ **Done** | `src/main/java/com/hashwatch/service/SigningService.java`, `src/test/java/.../SigningServiceTest.java` | Handle key rotation with timestamped archives, RFC 7468 PEM/DER export and parsing, and detached signature validation. | `docs/TRD.md` (Key Storage) |
