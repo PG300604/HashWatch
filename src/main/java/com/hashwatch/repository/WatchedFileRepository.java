@@ -14,5 +14,4 @@ public interface WatchedFileRepository extends JpaRepository<WatchedFile, Long> 
     List<WatchedFile> findByActiveTrue();
     List<WatchedFile> findByStatus(FileStatus status);
     long countByActiveTrue();
-    long countByStatus(FileStatus status);
 }
