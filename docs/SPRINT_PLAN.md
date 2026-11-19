@@ -109,11 +109,22 @@
 ### Sprint 4: Web Dashboard & Frontend Integration
 **Focus:** Frontend, API, DBMS.
 
-| Task ID | Domain | Assigned To | Folder / Target Files | Task Description | Doc Update Required |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **S4-T1** | Frontend | Riya | `src/main/resources/templates/dashboard.html`, `static/css/style.css` | Build responsive dashboard UI with status badges, metric counters, and file tables. | `docs/PRD.md` (UI section) |
-| **S4-T2** | Frontend & API | Riya | `src/main/resources/static/js/app.js`, `templates/alerts.html` | Wire asynchronous REST calls for instant scan triggers, alert resolution, and live reload. | `docs/TRD.md` |
-| **S4-T3** | Backend & DBMS | Samarjeet | `src/main/java/com/hashwatch/controller/DashboardViewController.java` | Model attribute aggregation (count queries, alert summaries) for Thymeleaf rendering. | `docs/PACKAGE_STRUCTURE.md` |
+| Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| **S4-T1** | Frontend | Riya & Priyanshu | ✅ **Done** | `src/main/resources/templates/dashboard.html`, `static/css/style.css` | Build responsive dashboard UI with status badges, metric counters, and file tables. | `docs/PRD.md` (UI section) |
+| **S4-T2** | Frontend & API | Riya & Samarjeet | ✅ **Done** | `src/main/resources/static/js/app.js`, `templates/alerts.html` | Wire asynchronous REST calls for instant scan triggers, alert resolution, and live reload. | `docs/TRD.md` |
+| **S4-T3** | Backend & DBMS | Samarjeet & Priyanshu | ✅ **Done** | `src/main/java/com/hashwatch/controller/DashboardViewController.java`, `DashboardViewControllerTest.java` | Model attribute aggregation (count queries, alert summaries) for Thymeleaf rendering. | `docs/PACKAGE_STRUCTURE.md` |
+
+#### Sprint 4 Progress Summary (100% Complete)
+
+##### 1. Dashboard UI & Incident Cockpit (`S4-T1`, `S4-T2` — Riya, Priyanshu & Samarjeet)
+- **`dashboard.html` & `style.css`:** Interactive monitoring dashboard displaying real-time system metrics (active files, monitored baselines, tamper/missing counts, key fingerprint), watched file registry table, manual scan trigger modal, and responsive CSS layout.
+- **`alerts.html`:** Dedicated security incident triage view with severity badge filtering (CRITICAL, WARNING, INFO), file path tracking, and 1-click resolution actions.
+- **`app.js`:** Asynchronous client-side REST dispatcher triggering immediate scans via `POST /api/alerts/scan-now` and resolving alerts via `POST /api/alerts/{id}/resolve` without page reloads.
+
+##### 2. MVC Controller & Model Binding (`S4-T3` — Samarjeet & Priyanshu)
+- **`DashboardViewController.java`:** Binds live database entities and stats to Thymeleaf templates (`/` and `/alerts`). Optimized with direct SQL `countByStatus(FileStatus)` queries in `WatchedFileRepository` to prevent loading large entity sets into the JVM heap.
+- **Automated View Tests:** Authored `DashboardViewControllerTest.java` (2/2 passing) verifying HTTP 200, template names, and model attribute presence under MockMvc.
 
 ---
 

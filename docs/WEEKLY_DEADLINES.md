@@ -35,5 +35,13 @@
 - [x] **S3-T2 (Priyanshu & Riya — API & Backend):** Implemented `AlertController.java` (unresolved alerts, 50 recent alerts, `/resolve`, `/scan-now`) and verified with `AlertControllerTest`.
 - [x] **S3-T3 (Samarjeet — Cryptology):** Implement Ed25519 key rotation with timestamped archives, standard RFC 7468 PEM/DER export and parsing, and detached signature validation in `SigningService.java` (12/12 unit tests passing).
 
+---
+
+## Sprint 4 Task Status Checklist
+
+- [x] **S4-T1 (Riya & Priyanshu — Frontend):** Built responsive Thymeleaf dashboard (`dashboard.html`) and dedicated CSS styles (`style.css`) with status badges, metric counters, file tables, and manual scan triggers.
+- [x] **S4-T2 (Riya & Samarjeet — Frontend & API):** Implemented `alerts.html` security incident triage view and wired asynchronous REST client operations in `app.js` for instant scan triggers and alert resolution.
+- [x] **S4-T3 (Samarjeet & Priyanshu — Backend & DBMS):** Implemented `DashboardViewController.java` populating model attributes with optimized repository count queries (`countByStatus`), verified with `DashboardViewControllerTest` (2/2 passing).
+
 > [!IMPORTANT]
 > All Pull Requests for the sprint must be submitted by **Saturday 18:00 IST** to allow review and resolution before the Sunday cutoff.

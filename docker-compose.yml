@@ -16,5 +16,28 @@ services:
       timeout: 5s
       retries: 5
 
+  hashwatch-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hashwatch-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hashwatch_db
+      SPRING_DATASOURCE_USERNAME: hashwatch
+      SPRING_DATASOURCE_PASSWORD: hashwatch_secret
+      HASHWATCH_MONITOR_SCAN_INTERVAL_SECONDS: 30
+      HASHWATCH_CRYPTO_KEY_DIRECTORY: /app/keys
+    ports:
+      - "8080:8080"
+    volumes:
+      - hashwatch_keys:/app/keys
+      - hashwatch_watched:/app/watched_files
+
 volumes:
   postgres_data:
+  hashwatch_keys:
+  hashwatch_watched:
