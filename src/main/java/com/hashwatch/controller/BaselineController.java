@@ -76,12 +76,16 @@ public class BaselineController {
      */
     @GetMapping("/public-key")
     public Map<String, String> getPublicKey() {
-        return Map.of(
-                "algorithm", "Ed25519",
-                "format", "X.509 SubjectPublicKeyInfo (Base64)",
-                "publicKey", signingService.getPublicKeyBase64(),
-                "fingerprint", signingService.getKeyFingerprint()
-        );
+        Map<String, String> response = new java.util.LinkedHashMap<>();
+        response.put("algorithm", "Ed25519");
+        response.put("format", "X.509 SubjectPublicKeyInfo (Base64)");
+        response.put("publicKey", signingService.getPublicKeyBase64());
+        response.put("fingerprint", signingService.getKeyFingerprint());
+        String pem = signingService.getPublicKeyPem();
+        if (pem != null && !pem.isBlank()) {
+            response.put("publicKeyPem", pem);
+        }
+        return response;
     }
 
     /**
