@@ -3,101 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HashWatch | File Integrity Monitor</title>
+    <title>HashWatch | Cryptographically Signed FIM</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <!--
     =============================================================================
-    DOMAIN: Frontend
-    ASSIGNED TO: Riya (Sprint 4)
+    DOMAIN: Frontend & Dashboard Cockpit
+    CO-AUTHORED BY: Group 3 (Riya & Priyanshu)
     FOLDER / TARGET: src/main/resources/templates/dashboard.html
-    DOC TO UPDATE: docs/PRD.md (Section 4 FR6)
+    DESIGN LANGUAGE: Obsidian & Electric Vermilion (Arounda Data SOC Aesthetic)
     =============================================================================
     -->
     <header class="navbar">
         <div class="brand">
-            <span class="logo-icon">🛡️</span>
-            <h1>HashWatch</h1>
-            <span class="badge">Ed25519 Signed</span>
+            <div class="brand-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <div>
+                <h1>HashWatch</h1>
+                <span class="brand-sub">Cryptographically Signed FIM</span>
+            </div>
+            <span class="badge badge-crypto">SunEC Ed25519</span>
         </div>
         <nav class="nav-links">
             <a href="/" class="active">Dashboard</a>
-            <a href="/alerts">Alerts <span class="counter" th:text="${alertCount}">0</span></a>
-            <button class="btn btn-primary" onclick="triggerScan()">⚡ Run Integrity Scan</button>
+            <a href="/alerts">Alerts <span class="counter" th:classappend="${alertCount > 0} ? 'counter-danger' : 'counter-zero'" th:text="${alertCount}">0</span></a>
+            <button id="scanBtn" class="btn btn-primary" onclick="triggerScan()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                Run Integrity Scan
+            </button>
         </nav>
     </header>
 
     <main class="container">
-        <!-- Metric Cards -->
-        <section class="metrics-grid">
-            <div class="metric-card">
-                <h3>Watched Files</h3>
-                <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Render activeCount -->
-                <p class="metric-value" th:text="${activeCount}">0</p>
-                <span class="metric-sub">Monitored periodically</span>
+        <!-- System Health Radar Banner -->
+        <section class="health-banner" th:classappend="${tamperedCount == 0 and alertCount == 0} ? 'health-ok' : 'health-breached'">
+            <div class="health-indicator">
+                <div class="pulse-beacon">
+                    <span class="pulse-dot"></span>
+                </div>
+                <div>
+                    <h2 th:text="${tamperedCount == 0 and alertCount == 0} ? 'System Integrity Secure' : 'Integrity Anomaly / Breach Detected'">SYSTEM INTEGRITY SECURE</h2>
+                    <p th:text="${tamperedCount == 0 and alertCount == 0} ? 'All monitored files match their signed SHA-256 and Ed25519 cryptographic baselines.' : 'One or more files have failed verification or experienced unauthorized digest alterations.'">Status details</p>
+                </div>
             </div>
-            <div class="metric-card">
-                <h3>Active Baselines</h3>
-                <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Render count of baselines -->
-                <p class="metric-value" th:text="${#lists.size(baselines)}">0</p>
-                <span class="metric-sub">SHA-256 + Ed25519</span>
-            </div>
-            <div class="metric-card" th:classappend="${alertCount > 0} ? 'card-danger' : 'card-success'">
-                <h3>Unresolved Alerts</h3>
-                <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Render alertCount -->
-                <p class="metric-value" th:text="${alertCount}">0</p>
-                <span class="metric-sub" th:text="${alertCount > 0} ? 'Tampering detected!' : 'All signatures valid'">Status</span>
+            <div class="health-meta">
+                <span class="meta-label">Quartz Scan Daemon</span>
+                <span class="meta-value">30s Interval</span>
             </div>
         </section>
 
-        <!-- Register New File Form -->
+        <!-- High-Density KPI Metrics Grid -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Active Watched Files</h3>
+                    <div class="metric-icon-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="metric-value" th:text="${activeCount}">0</p>
+                <span class="metric-sub" th:text="${#lists.size(files)} + ' total registered in database'">0 total</span>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Active Baselines</h3>
+                    <div class="metric-icon-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="metric-value" th:text="${#lists.size(baselines)}">0</p>
+                <span class="metric-sub">Triple-Lock SHA-256 + Ed25519</span>
+            </div>
+
+            <div class="metric-card" th:classappend="${tamperedCount > 0} ? 'card-danger' : 'card-neutral'">
+                <div class="metric-header">
+                    <h3>Tampered Files</h3>
+                    <div class="metric-icon-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="metric-value" th:text="${tamperedCount}">0</p>
+                <span class="metric-sub" th:text="${tamperedCount > 0} ? 'Immediate investigation required' : 'Zero files compromised'">Status</span>
+            </div>
+
+            <div class="metric-card" th:classappend="${alertCount > 0} ? 'card-danger' : 'card-success'">
+                <div class="metric-header">
+                    <h3>Unresolved Alerts</h3>
+                    <div class="metric-icon-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="metric-value" th:text="${alertCount}">0</p>
+                <span class="metric-sub" th:text="${alertCount > 0} ? 'Pending triage in Security Center' : 'All incidents resolved'">Status</span>
+            </div>
+        </section>
+
+        <!-- Register New Watched File Form -->
         <section class="card">
-            <h2>Add File to Watchlist</h2>
-            <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Form submit handling via JS -->
+            <div class="card-header">
+                <div>
+                    <h2>Register Monitored Target</h2>
+                    <p class="text-muted">Calculates 64 KB streaming SHA-256 digest and binds asymmetric Ed25519 digital signature.</p>
+                </div>
+            </div>
             <form id="addFileForm" onsubmit="registerFile(event)" class="form-row">
-                <input type="text" id="filePathInput" placeholder="Enter absolute file path (e.g. /etc/hosts or C:\system.conf)" required>
-                <button type="submit" class="btn btn-secondary">+ Register & Baseline</button>
+                <input type="text" id="filePathInput" placeholder="Enter absolute file path (e.g. /etc/hosts or C:\system.conf)" required autocomplete="off">
+                <button type="submit" id="registerBtn" class="btn btn-secondary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Register & Establish Baseline
+                </button>
             </form>
         </section>
 
-        <!-- Watched Files Table -->
+        <!-- Watched Files Inventory Table -->
         <section class="card">
             <div class="card-header">
-                <h2>Watched Files & Status</h2>
-                <button class="btn btn-sm btn-outline" onclick="rebaselineAll()">Rebaseline All</button>
+                <div>
+                    <h2>Monitored Files Inventory</h2>
+                    <p class="text-muted">State machine: VERIFIED (intact), TAMPERED (digest mismatch), MISSING (file removed), SIGNATURE_INVALID (key mismatch).</p>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline" onclick="rebaselineAll()">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                            <path d="M3 3v5h5"/>
+                            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                            <path d="M16 16h5v5"/>
+                        </svg>
+                        Rebaseline All Active
+                    </button>
+                </div>
             </div>
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
-                            <th>File Path</th>
-                            <th>Status</th>
-                            <th>Size (Bytes)</th>
-                            <th>Last Checked</th>
+                            <th>ID</th>
+                            <th>Target File Path</th>
+                            <th>Integrity Status</th>
+                            <th>Active</th>
+                            <th>File Size</th>
+                            <th>Last Modified</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- TODO [Sprint 4 - Frontend]: Assigned to Riya - Populate watched file list with status pills -->
                         <tr th:if="${#lists.isEmpty(files)}">
-                            <td colspan="5" class="empty-state">No files registered yet. Add a file path above to begin monitoring.</td>
+                            <td colspan="7" class="empty-state">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+                                </svg>
+                                <p>No files registered in the watchlist yet.</p>
+                                <span class="text-muted">Use the input above to register your first critical file.</span>
+                            </td>
                         </tr>
-                        <tr th:each="file : ${files}">
-                            <td class="font-mono text-break" th:text="${file.filePath}"></td>
+                        <tr th:each="file : ${files}" th:classappend="${!file.active ? 'row-inactive' : (file.status.name() == 'TAMPERED' ? 'row-tampered' : '')}">
+                            <td class="font-mono text-muted" th:text="${file.id}">1</td>
+                            <td class="font-mono text-break">
+                                <span class="file-path-text" th:text="${file.filePath}">/path/to/file</span>
+                            </td>
                             <td>
                                 <span class="status-pill"
-                                      th:classappend="${file.status.name() == 'VERIFIED' ? 'status-ok' : (file.status.name() == 'TAMPERED' ? 'status-danger' : 'status-warn')}"
+                                      th:classappend="${file.status.name() == 'VERIFIED' ? 'status-ok' : (file.status.name() == 'TAMPERED' ? 'status-danger' : (file.status.name() == 'MISSING' ? 'status-missing' : (file.status.name() == 'SIGNATURE_INVALID' ? 'status-invalid' : 'status-warn')))}"
                                       th:text="${file.status}">VERIFIED</span>
                             </td>
-                            <td th:text="${file.fileSize}">0</td>
-                            <td th:text="${file.lastModified != null ? #temporals.format(file.lastModified, 'yyyy-MM-dd HH:mm:ss') : 'N/A'}"></td>
                             <td>
-                                <button class="btn btn-sm" th:onclick="'rebaselineSingle(' + ${file.id} + ')'">Rebaseline</button>
-                                <button class="btn btn-sm btn-danger-outline" th:onclick="'removeFile(' + ${file.id} + ')'">Remove</button>
+                                <span class="badge" th:classappend="${file.active} ? 'badge-active' : 'badge-inactive'" th:text="${file.active} ? 'ACTIVE' : 'PAUSED'">ACTIVE</span>
+                            </td>
+                            <td class="font-mono" th:text="${file.fileSize != null ? file.fileSize + ' B' : 'N/A'}">0 B</td>
+                            <td class="text-muted font-mono" th:text="${file.lastModified != null ? #temporals.format(file.lastModified, 'yyyy-MM-dd HH:mm:ss') : 'N/A'}">N/A</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-outline" th:onclick="'rebaselineSingle(' + ${file.id} + ')'" title="Regenerate cryptographic baseline">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                            <path d="M3 3v5h5"/>
+                                        </svg>
+                                        Rebaseline
+                                    </button>
+                                    <button th:if="${file.active}" class="btn btn-sm btn-danger-outline" th:onclick="'removeFile(' + ${file.id} + ')'" title="Deactivate monitoring">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                        Unwatch
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -105,6 +221,8 @@
             </div>
         </section>
     </main>
+
+    <div id="toastContainer" class="toast-container"></div>
 
     <script th:src="@{/js/app.js}"></script>
 </body>
