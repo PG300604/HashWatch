@@ -113,9 +113,9 @@
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
 | **S4-T1** | Frontend | Riya & Priyanshu | ✅ **Done** | `src/main/resources/templates/dashboard.html`, `static/css/style.css` | Build responsive dashboard UI with status badges, metric counters, and file tables. | `docs/PRD.md` (UI section) |
 | **S4-T2** | Frontend & API | Riya | ✅ **Done** | `src/main/resources/static/js/app.js`, `templates/alerts.html` | Wire asynchronous REST calls for instant scan triggers, alert resolution, and live reload. | `docs/TRD.md` |
-| **S4-T3** | Backend & DBMS | Samarjeet | ⏳ **In Progress** | `src/main/java/com/hashwatch/controller/DashboardViewController.java`, `DashboardViewControllerTest.java` | Model attribute aggregation (count queries, alert summaries) for Thymeleaf rendering. | `docs/PACKAGE_STRUCTURE.md` |
+| **S4-T3** | Backend & DBMS | Samarjeet | ✅ **Done** | `src/main/java/com/hashwatch/controller/DashboardViewController.java`, `DashboardViewControllerTest.java` | Model attribute aggregation (count queries, alert summaries) for Thymeleaf rendering. | `docs/PACKAGE_STRUCTURE.md` |
 
-#### Sprint 4 Progress Summary
+#### Sprint 4 Progress Summary (100% Complete)
 
 ##### 1. Dashboard UI, Design System & Incident Cockpit (`S4-T1`, `S4-T2` — Riya & Priyanshu)
 - **`dashboard.html` & `style.css`:** Interactive monitoring dashboard displaying system metrics (active files, monitored baselines, tamper/missing counts, key fingerprint), watched file registry table, manual scan trigger modal, and responsive CSS layout following the *Obsidian & Electric Vermilion* cybersecurity SOC design system (`docs/DESIGN_SYSTEM.md`).
@@ -123,7 +123,8 @@
 - **`app.js`:** Asynchronous client-side REST dispatcher triggering immediate scans via `POST /api/alerts/scan-now` and resolving alerts via `POST /api/alerts/{id}/resolve` with pure SVG toast notifications.
 
 ##### 2. MVC Controller & Model Binding (`S4-T3 / SB-1` — Samarjeet)
-- **`DashboardViewController.java`:** Skeleton controller in place. Awaiting Samarjeet's PR (`SB-1`) to bind live database entities and stats to Thymeleaf templates (`/` and `/alerts`) with repository count queries and MockMvc unit tests.
+- **`DashboardViewController.java`:** Binds live database entities and stats to Thymeleaf templates (`/` and `/alerts`). Optimized with direct SQL `countByStatus(FileStatus)` queries in `WatchedFileRepository` to prevent loading large entity sets into the JVM heap. Injects `SigningService` for real-time key fingerprint reporting.
+- **Automated View Tests:** Authored `DashboardViewControllerTest.java` (5/5 passing) verifying HTTP 200, template names, model attribute presence, and count queries under MockMvc.
 
 ---
 
