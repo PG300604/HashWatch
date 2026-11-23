@@ -60,6 +60,11 @@ hashwatch/
 │   │
 │   └── test/java/com/hashwatch/             # Automated test suite
 │       ├── HashWatchApplicationTests.java
+│       ├── controller/                      # [API & Frontend Integration Tests]
+│       │   ├── AlertControllerTest.java     # MockMvc alert triage & scan trigger suite (S3-T2)
+│       │   ├── BaselineControllerTest.java  # MockMvc baseline feed & public key export suite (S3-T1)
+│       │   ├── DashboardViewControllerTest.java # MockMvc UI model binding & count queries (S4-T3)
+│       │   └── FileWatchControllerTest.java # MockMvc monitored file registration & safety caps (S3-T1)
 │       ├── repository/
 │       │   └── RepositoryIntegrationTest.java # @DataJpaTest DBMS verification suite (S1-T4)
 │       └── service/

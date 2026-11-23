@@ -71,6 +71,11 @@ public class DashboardViewControllerTest {
                 .andExpect(model().attributeExists("missingCount"))
                 .andExpect(model().attributeExists("keyFingerprint"))
                 .andExpect(model().attribute("keyFingerprint", not(emptyOrNullString())));
+
+        // Verify /dashboard route alias
+        mockMvc.perform(get("/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("dashboard"));
     }
 
     @Test

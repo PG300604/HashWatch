@@ -58,7 +58,7 @@
                         </svg>
                     </div>
                 </div>
-                <p class="metric-value" th:text="${#lists.size(alerts)}">0</p>
+                <p class="metric-value" th:text="${totalAlertCount != null ? totalAlertCount : #lists.size(alerts)}">0</p>
                 <span class="metric-sub">Historical audit trail</span>
             </div>
 
@@ -87,7 +87,7 @@
                         </svg>
                     </div>
                 </div>
-                <p class="metric-value" th:text="${alertCount}">0</p>
+                <p class="metric-value" th:text="${criticalCount != null ? criticalCount : alertCount}">0</p>
                 <span class="metric-sub">Digest / Signature invalidations</span>
             </div>
 
@@ -101,7 +101,7 @@
                         </svg>
                     </div>
                 </div>
-                <p class="metric-value" th:text="${#lists.size(alerts) - alertCount}">0</p>
+                <p class="metric-value" th:text="${resolvedAlertCount != null ? resolvedAlertCount : (#lists.size(alerts) >= alertCount ? #lists.size(alerts) - alertCount : 0)}">0</p>
                 <span class="metric-sub">Remediated & re-baselined</span>
             </div>
         </section>
