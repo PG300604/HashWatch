@@ -131,16 +131,25 @@
 ### Sprint 5: DevOps Automation, Performance Benchmarking & Python Analysis
 **Focus:** DevOps, Analysis, Backend.
 
-| Task ID | Domain | Assigned To | Folder / Target Files | Task Description | Doc Update Required |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **S5-T1** | DevOps | Priyanshu | `.github/workflows/ci.yml`, `Dockerfile` | Multi-stage Docker build for Spring Boot app and GitHub Actions automated CI testing. | `docs/SETUP.md` |
-| **S5-T2** | Analysis | Priyanshu | `python-analysis/overhead_benchmark.py` | Benchmark SHA-256 throughput vs file size & Ed25519 signs/sec; produce comparison plots. | `docs/RESEARCH_BENCHMARKS.md` |
-| **S5-T3** | Analysis | Samarjeet | `python-analysis/latency_analysis.py` | Measure end-to-end detection latency distributions; compute mean, median, P95 metrics. | `docs/RESEARCH_BENCHMARKS.md` |
-| **S5-T4** | Cryptology & API | Riya | `src/test/java/` | Integration testing of tamper detection when malicious bytes are injected into watched files. | `docs/PRD.md` (Testing) |
+| Task ID | Domain | Assigned To | Status | Folder / Target Files | Task Description | Doc Update Required |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| **S5-T1** | DevOps | Priyanshu | ✅ **Done** | `.github/workflows/ci.yml`, `Dockerfile` | Multi-stage Docker build for Spring Boot app and GitHub Actions automated CI testing. | `docs/SETUP.md` |
+| **S5-T2** | Analysis | Priyanshu | ✅ **Done** | `python-analysis/overhead_benchmark.py` | Benchmark SHA-256 throughput vs file size & Ed25519 signs/sec; produce comparison plots. | `docs/RESEARCH_BENCHMARKS.md` |
+| **S5-T3** | Analysis | Samarjeet | ⏳ **Pending** | `python-analysis/latency_analysis.py` | Measure end-to-end detection latency distributions; compute mean, median, P95 metrics. | `docs/RESEARCH_BENCHMARKS.md` |
+| **S5-T4** | Cryptology & API | Riya & Priyanshu | ✅ **Done** | `src/test/java/com/hashwatch/integration/TamperDetectionIntegrationTest.java` | Integration testing of tamper detection when malicious bytes are injected into watched files. | `docs/PRD.md` (Testing) |
 
 #### Sprint 5 Implementation Highlights & Deliverables Completed
 
-##### Cryptographic Tamper Injection & Recovery Integration Suite (`S5-T4` — Riya)
+##### 1. DevOps Containerization & Automated Continuous Integration (`S5-T1` — Priyanshu)
+- **Multi-Stage Dockerfile (`Dockerfile`):** Implemented high-efficiency multi-stage build using `maven:3.9.9-eclipse-temurin-21-alpine` for dependency caching and artifact compilation, coupled with a minimal `eclipse-temurin:21-jre-alpine` production runtime image. Configured an unprivileged system user (`hashwatch:hashwatch`), non-blocking entropy source (`-Djava.security.egd=file:/dev/./urandom`), and HTTP healthcheck probes against `/api/files`.
+- **Compose Multi-Container Stack (`docker-compose.yml`):** Configured containerized infrastructure pairing HashWatch with PostgreSQL 16 Alpine. Gated application startup on database health (`condition: service_healthy`), configured environment profile variables, and mounted persistent Docker named volumes for cryptographic keys (`hashwatch_keys`) and watched directories (`hashwatch_watched`).
+- **GitHub Actions Automated CI Pipeline (`.github/workflows/ci.yml`):** Configured end-to-end GitHub Actions workflow executing on pushes to `main` / `sprint-**` and PRs targeting `main`. Automatically spins up Eclipse Temurin JDK 21, executes the full Maven test suite under H2, bootstraps Python 3.12, installs benchmark dependencies, and verifies execution of all analysis scripts.
+
+##### 2. Cryptographic Overhead & Micro-Benchmarking Suite (`S5-T2` — Priyanshu)
+- **SHA-256 Streaming Throughput:** Measured hashing throughput across binary payloads scaling from 1 MB to 100 MB with 64 KB buffering. Confirmed throughput scaling up to 1,955 MB/s, validating compliance with the snaproot benchmark paper (0.8 GB/s baseline). Exported visualization to `python-analysis/charts/hashing_throughput.png`.
+- **Ed25519 Asymmetric Signature Performance:** Benchmarked asymmetric signing and verification operations, clocking ~38,620 signs/sec and ~13,324 verifies/sec on host hardware. Exported visualization to `python-analysis/charts/ed25519_performance.png`.
+
+##### 3. Cryptographic Tamper Injection & Recovery Integration Suite (`S5-T4` — Riya & Priyanshu)
 - Authored comprehensive end-to-end integration test suite in `src/test/java/com/hashwatch/integration/TamperDetectionIntegrationTest.java` (7/7 tests passing).
 - **Byte-Level Malicious Tamper Injection:** Validated full lifecycle detection when unauthorized bytes are appended to a monitored file; asserts transition to `TAMPERED` status and creation of `UNAUTHORIZED_MODIFICATION` alert with expected vs. actual hash diff.
 - **Single-Bit Flip Sensitivity:** Verified 100% detection rate when inverting a single bit (`^= 0x01`) in a 4,096-byte binary payload, proving SHA-256 avalanche effect behavior.
