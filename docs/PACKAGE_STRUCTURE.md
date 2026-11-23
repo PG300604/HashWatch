@@ -65,6 +65,8 @@ hashwatch/
 │       │   ├── BaselineControllerTest.java  # MockMvc baseline feed & public key export suite (S3-T1)
 │       │   ├── DashboardViewControllerTest.java # MockMvc UI model binding & count queries (S4-T3)
 │       │   └── FileWatchControllerTest.java # MockMvc monitored file registration & safety caps (S3-T1)
+│       ├── integration/                     # [End-to-End Cryptographic Integration Tests]
+│       │   └── TamperDetectionIntegrationTest.java # Tamper injection & single-bit flip suite (S5-T4)
 │       ├── repository/
 │       │   └── RepositoryIntegrationTest.java # @DataJpaTest DBMS verification suite (S1-T4)
 │       └── service/

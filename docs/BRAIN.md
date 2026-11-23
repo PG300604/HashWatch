@@ -88,7 +88,7 @@ flowchart TD
     end
 
     subgraph Sprint4["Sprint 4: Web Dashboard UI"]
-        S4R["Riya: Frontend (Thymeleaf UI & alerts view)"]
+        S4R["✅ Riya: Frontend (Thymeleaf UI & alerts view)"]
         S4S["Samarjeet: Frontend/Backend (DashboardViewController stats)"]
         S4P["Priyanshu: DevOps (Local testing & profiles)"]
     end
@@ -96,7 +96,7 @@ flowchart TD
     subgraph Sprint5["Sprint 5: Benchmarking & CI"]
         S5P["Priyanshu: Analysis & DevOps (CI pipeline & overhead scripts)"]
         S5S["Samarjeet: Analysis (Latency distributions & P95 metrics)"]
-        S5R["Riya: Cryptology (Tamper injection test cases)"]
+        S5R["✅ Riya: Cryptology (Tamper injection integration tests)"]
     end
 
     subgraph Sprint6["Sprint 6: Final Verification & Defense"]
