@@ -14,4 +14,13 @@ public interface WatchedFileRepository extends JpaRepository<WatchedFile, Long> 
     List<WatchedFile> findByActiveTrue();
     List<WatchedFile> findByStatus(FileStatus status);
     long countByActiveTrue();
+
+    /**
+     * Optimized direct count query by integrity status (e.g. TAMPERED, MISSING, VERIFIED).
+     * Avoids loading large entity collections into JVM heap for dashboard KPI metric tiles.
+     *
+     * @param status the integrity status to count
+     * @return total matching files
+     */
+    long countByStatus(FileStatus status);
 }

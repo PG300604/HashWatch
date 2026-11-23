@@ -41,7 +41,7 @@
 
 - [x] **S4-T1 (Riya & Priyanshu — Frontend):** Built responsive Thymeleaf dashboard (`dashboard.html`) and dedicated CSS styles (`style.css`) with status badges, metric counters, file tables, and manual scan triggers adhering to `docs/DESIGN_SYSTEM.md`.
 - [x] **S4-T2 (Riya — Frontend & API):** Implemented `alerts.html` security incident triage view and wired asynchronous REST client operations in `app.js` for instant scan triggers and alert resolution.
-- [ ] **S4-T3 / SB-1 (Samarjeet — Backend & DBMS):** Implement `DashboardViewController.java` populating model attributes with repository count queries (`countByStatus`), verified with `DashboardViewControllerTest`.
+- [x] **S4-T3 / SB-1 (Samarjeet — Backend & DBMS):** Implemented `DashboardViewController.java` populating model attributes with repository count queries (`countByStatus`), verified with `DashboardViewControllerTest`.
 
 > [!IMPORTANT]
 > All Pull Requests for the sprint must be submitted by **Saturday 18:00 IST** to allow review and resolution before the Sunday cutoff.
