@@ -6,6 +6,7 @@ import com.hashwatch.entity.FileStatus;
 import com.hashwatch.entity.WatchedFile;
 import com.hashwatch.repository.BaselineEntryRepository;
 import com.hashwatch.repository.WatchedFileRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,12 @@ public class FileControllerTest {
 
     @BeforeEach
     void cleanDatabase() {
+        baselineEntryRepository.deleteAll();
+        watchedFileRepository.deleteAll();
+    }
+
+    @AfterEach
+    void tearDown() {
         baselineEntryRepository.deleteAll();
         watchedFileRepository.deleteAll();
     }

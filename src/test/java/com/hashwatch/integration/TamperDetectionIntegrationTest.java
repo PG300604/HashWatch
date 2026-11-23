@@ -34,7 +34,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * =============================================================================
  * DOMAIN: Cryptology & API Integration
- * ASSIGNED TO: Riya (Sprint 5: S5-T4)
+ * ASSIGNED TO: Riya & Priyanshu (Sprint 5: S5-T4)
+ * CO-AUTHORED BY: Priyanshu Ghosh (@PG300604)
  * TARGET: src/test/java/com/hashwatch/integration/TamperDetectionIntegrationTest.java
  * DOC TO UPDATE: docs/PRD.md (Testing & Verification)
  * =============================================================================

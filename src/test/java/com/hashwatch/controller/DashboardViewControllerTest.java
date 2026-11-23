@@ -5,6 +5,7 @@ import com.hashwatch.repository.AlertEventRepository;
 import com.hashwatch.repository.BaselineEntryRepository;
 import com.hashwatch.repository.WatchedFileRepository;
 import com.hashwatch.service.SigningService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +56,13 @@ public class DashboardViewControllerTest {
 
     @Autowired
     private SigningService signingService;
+
+    @BeforeEach
+    void cleanDatabase() {
+        alertEventRepository.deleteAll();
+        baselineEntryRepository.deleteAll();
+        watchedFileRepository.deleteAll();
+    }
 
     @Test
     @DisplayName("GET / - Should render dashboard.html with empty/default model attributes")
