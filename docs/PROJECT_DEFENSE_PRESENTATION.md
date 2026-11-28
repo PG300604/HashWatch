@@ -316,17 +316,14 @@ stateDiagram-v2
 
 ---
 
-## Slide 15: Conclusion & Phase 2 (8th-Semester) Roadmap
+## Slide 15: Conclusion & Committee Review
 
 ### Concluding Highlights
 - **Solved Core Problem:** Eliminated the baseline mutable vulnerability through asymmetric Ed25519 signing.
-- **Enterprise Ready:** Low overhead, bounded memory, Quartz scheduling, Docker multi-stage build, and zero-dependency web interface.
+- **Enterprise Ready:** Low overhead (`1,872–2,009 MB/s` SHA-256, `30.5k` signs/s), bounded `< 64 KB` stream memory, Quartz scheduling, Docker multi-stage build, and zero-dependency web interface.
+- **Verified Quality:** 98 / 98 unit, MockMvc, and end-to-end tamper integration tests passing (`BUILD SUCCESS`).
 - **Compliance Alignment:** Directly fulfills PCI-DSS 11.5, SOC2, and NIST 800-53 change detection requirements.
-
-### Phase 2 Extensions (Semester 8: Dec 2026 – May 2027)
-1. **Hybrid Event + Polling (`WatchService` / eBPF + Virtual Threads):** Sub-second event-driven detection closing the 30s TOCTOU window, paired with Java 21 Virtual Thread parallel scans.
-2. **Zero-Trust Auth & Hash-Chained Audit Log:** Spring Security RBAC + immutable SHA-256 hash-chained `alert_events` + Merkle-tree batch signing.
-3. **Hardware Key Protection & Post-Quantum Hybrid:** PKCS#11 / Vault key custody and hybrid Ed25519 + ML-DSA (FIPS 204) signature verification research.
+- **Next Steps:** Future optimization and extension topics will be finalized in consultation with our Project Guide and faculty committee.
 
 ---
 
