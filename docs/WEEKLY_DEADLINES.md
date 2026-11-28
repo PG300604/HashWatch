@@ -49,7 +49,7 @@
 
 - [x] **S5-T1 (Priyanshu — DevOps):** Multi-stage Docker build for Spring Boot app and GitHub Actions automated CI testing (`.github/workflows/ci.yml`, `Dockerfile`).
 - [x] **S5-T2 (Priyanshu — Analysis):** Benchmark SHA-256 throughput vs file size & Ed25519 signs/sec; produce comparison plots (`python-analysis/overhead_benchmark.py`).
-- [ ] **S5-T3 (Samarjeet — Analysis):** Measure end-to-end detection latency distributions; compute mean, median, P95 metrics (`python-analysis/latency_analysis.py`).
+- [x] **S5-T3 (Samarjeet — Analysis):** Measure end-to-end detection latency distributions; compute mean, median, P95 metrics (`python-analysis/latency_analysis.py`).
 - [x] **S5-T4 (Riya & Priyanshu — Cryptology & API):** Implement end-to-end integration test suite verifying tamper detection, single-bit flip sensitivity, database signature invalidation, missing files, and authorized re-baselining (`TamperDetectionIntegrationTest.java`, 7/7 passing).
 
 > [!IMPORTANT]

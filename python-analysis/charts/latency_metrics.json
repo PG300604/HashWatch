@@ -1,0 +1,14 @@
+{
+  "sample_size": 10000,
+  "mean_seconds": 14.83,
+  "median_seconds": 14.7592,
+  "std_dev_seconds": 8.5961,
+  "min_seconds": 0.0078,
+  "max_seconds": 29.9999,
+  "p25_seconds": 7.4412,
+  "p75_seconds": 22.2612,
+  "iqr_seconds": 14.82,
+  "p90_seconds": 26.7044,
+  "p95_seconds": 28.4186,
+  "p99_seconds": 29.6689
+}

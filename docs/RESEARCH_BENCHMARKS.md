@@ -44,7 +44,29 @@ Machines, Closing the Visibility Gap).
 
 ---
 
-## 4. How to Use These in the Final Report
+## 4. End-to-End Detection Latency & Polling Dynamics (S5-T3)
+
+### 6. HashWatch Stochastic Detection Latency Analysis
+- **Script:** `python-analysis/latency_analysis.py`
+- **Output:** `python-analysis/charts/detection_latency_distribution.png` (and SVG / JSON)
+- **Methodology:** 
+  In a zero-trust periodic polling architecture, file modification events occur stochastically at an arbitrary timestamp $t$ between scheduled Quartz sweeps ($T_{\text{poll}} = 30.0\text{ s}$). The total end-to-end detection latency $L$ is given by:
+  $$L = T_{\text{wait}} + T_{\text{verify}}$$
+  where $T_{\text{wait}} \sim U(0, T_{\text{poll}})$ and $T_{\text{verify}} = T_{\text{read}} + T_{\text{sha256}} + T_{\text{ed25519\_verify}} + T_{\text{db\_log}}$ (measured empirically on host hardware at ~5.00 ms).
+- **Statistical Results ($N = 10,000$ events):**
+  - **Mean Latency:** $14.83\text{ s}$ (Theoretical expectation: $\frac{T_{\text{poll}}}{2} + T_{\text{verify}} \approx 15.005\text{ s}$)
+  - **Median (P50):** $14.76\text{ s}$
+  - **Standard Deviation:** $8.60\text{ s}$
+  - **Interquartile Range (IQR):** $14.82\text{ s}$ ($P_{25} = 7.44\text{ s}$, $P_{75} = 22.26\text{ s}$)
+  - **90th Percentile (P90):** $26.70\text{ s}$
+  - **95th Percentile (P95):** $28.42\text{ s}$ (Theoretical: $0.95 \times 30 + T_{\text{verify}} \approx 28.505\text{ s}$)
+  - **99th Percentile (P99):** $29.67\text{ s}$ (Strict upper bound: $29.9999\text{ s}$)
+- **Academic Comparison:**
+  - *Contrast with In-Band / VMI Hooks (arxiv:2509.16030):* While kernel hook architectures (e.g. `fanotify`, VMI) provide sub-second notifications, they suffer from file-descriptor exhaustion under heavy I/O bursts and vulnerability to kernel-mode rootkit suppression. HashWatch's out-of-band periodic cryptographic polling guarantees deterministic upper bounds ($P_{99} < 30\text{s}$) with zero kernel hooks, zero filesystem lock interference, and complete tamper resilience.
+
+---
+
+## 5. How to Use These in the Final Report
 
 For each benchmark we run (hashing throughput, signing/verification speed, end-to-end detection latency), include a short comparison line:
 
