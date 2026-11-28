@@ -193,9 +193,9 @@ public class ComparisonService {
         BaselineEntry baseline = baselineOpt.get();
         Path path = Paths.get(fileEntity.getFilePath());
 
-        // 2. Check if file exists on disk
-        if (!Files.exists(path)) {
-            log.error("Watched file is MISSING from filesystem: {}", fileEntity.getFilePath());
+        // 2. Check if file exists on disk and is a regular file
+        if (!Files.exists(path) || !Files.isRegularFile(path)) {
+            log.error("Watched file is MISSING or not a regular file on filesystem: {}", fileEntity.getFilePath());
             fileEntity.setStatus(FileStatus.MISSING);
             watchedFileRepository.save(fileEntity);
             createAlertIfNotPresent(
@@ -244,9 +244,9 @@ public class ComparisonService {
         try {
             currentHash = hashingService.hashFile(path.toFile());
             currentSize = Files.size(path);
-        } catch (IOException e) {
-            log.warn("Transient I/O error or file lock while accessing {}: {}", fileEntity.getFilePath(), e.getMessage());
-            return; // Retain current status during transient I/O lock
+        } catch (IOException | IllegalArgumentException e) {
+            log.warn("Transient I/O error or unreadable target while accessing {}: {}", fileEntity.getFilePath(), e.getMessage());
+            return; // Retain current status during transient I/O lock or permission denial
         }
 
         // 5. Compare current hash with authentic baseline hash
