@@ -81,12 +81,39 @@ if ($env:MVN_CMD_PATH_CHECK -eq '1') {
 }
 
 if (-not (Test-Path $mvnCmd)) {
-    Write-Host "[Maven Wrapper] Downloading $distUrl ..."
+    # Check if system mvn exists in PATH to bypass rate limits
+    $sysMvn = Get-Command mvn -ErrorAction SilentlyContinue
+    if ($sysMvn) {
+        if ($env:MVN_CMD_PATH_CHECK -eq '1') {
+            Write-Output $sysMvn.Source
+            exit 0
+        }
+    }
+
+    $mirrors = @(
+        $distUrl,
+        "https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/$zipName",
+        "https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/$zipName"
+    )
     New-Item -ItemType Directory -Force -Path $m2WrapperDir | Out-Null
     $zipPath = Join-Path $m2WrapperDir $zipName
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    Invoke-WebRequest -Uri $distUrl -OutFile $zipPath
-    Write-Host "[Maven Wrapper] Extracting $zipName ..."
-    Expand-Archive -Path $zipPath -DestinationPath $m2WrapperDir -Force
-    Remove-Item $zipPath -Force
+    $downloaded = $false
+
+    foreach ($url in $mirrors) {
+        try {
+            Write-Host "[Maven Wrapper] Downloading $url ..."
+            Invoke-WebRequest -Uri $url -OutFile $zipPath
+            $downloaded = $true
+            break
+        } catch {
+            Write-Host "[Maven Wrapper] Mirror $url failed, trying fallback..."
+        }
+    }
+
+    if ($downloaded -and (Test-Path $zipPath)) {
+        Write-Host "[Maven Wrapper] Extracting $zipName ..."
+        Expand-Archive -Path $zipPath -DestinationPath $m2WrapperDir -Force
+        Remove-Item $zipPath -Force
+    }
 }

@@ -20,8 +20,13 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    - name: Build and Test with Maven Wrapper
-      run: ./mvnw clean test -Dspring.profiles.active=h2
+    - name: Build and Test with Maven
+      run: |
+        if command -v mvn &> /dev/null; then
+          mvn clean test -Dspring.profiles.active=h2
+        else
+          ./mvnw clean test -Dspring.profiles.active=h2
+        fi
 
     - name: Set up Python
       uses: actions/setup-python@v5

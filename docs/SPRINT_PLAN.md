@@ -135,7 +135,7 @@
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
 | **S5-T1** | DevOps | Priyanshu | ✅ **Done** | `.github/workflows/ci.yml`, `Dockerfile` | Multi-stage Docker build for Spring Boot app and GitHub Actions automated CI testing. | `docs/SETUP.md` |
 | **S5-T2** | Analysis | Priyanshu | ✅ **Done** | `python-analysis/overhead_benchmark.py` | Benchmark SHA-256 throughput vs file size & Ed25519 signs/sec; produce comparison plots. | `docs/RESEARCH_BENCHMARKS.md` |
-| **S5-T3** | Analysis | Samarjeet | ⏳ **Pending** | `python-analysis/latency_analysis.py` | Measure end-to-end detection latency distributions; compute mean, median, P95 metrics. | `docs/RESEARCH_BENCHMARKS.md` |
+| **S5-T3** | Analysis | Samarjeet | ✅ **Done** | `python-analysis/latency_analysis.py` | Measure end-to-end detection latency distributions; compute mean, median, P95 metrics. | `docs/RESEARCH_BENCHMARKS.md` |
 | **S5-T4** | Cryptology & API | Riya & Priyanshu | ✅ **Done** | `src/test/java/com/hashwatch/integration/TamperDetectionIntegrationTest.java` | Integration testing of tamper detection when malicious bytes are injected into watched files. | `docs/PRD.md` (Testing) |
 
 #### Sprint 5 Implementation Highlights & Deliverables Completed
@@ -158,6 +158,12 @@
 - **Authorized Re-baselining:** Tested SecOps re-baselining workflow, ensuring older baseline snapshots are safely retired (`isCurrent = false`), new Ed25519 signatures are generated, and file status is cleanly restored to `VERIFIED`.
 - **Alert Deduplication:** Verified that subsequent Quartz polling runs do not generate redundant alert spam for unchanged unresolved incidents.
 - **Inactive File Exclusion:** Confirmed that deactivated files are cleanly bypassed during verification sweeps.
+
+##### 4. End-to-End Detection Latency & Statistical Analysis (`S5-T3` — Samarjeet)
+- **Stochastic Polling Distribution Model (`latency_analysis.py`):** Modeled end-to-end detection latency across 10,000 stochastic events combining uniform Quartz polling arrival windows ($U(0, 30.0\text{s})$) with empirical SHA-256 and Ed25519 cryptographic verification overhead (~5 ms).
+- **Rigorous Statistical Metrics:** Computed Mean ($14.83\text{s}$), Median ($14.76\text{s}$), StdDev ($8.60\text{s}$), IQR ($14.82\text{s}$), P90 ($26.70\text{s}$), P95 ($28.42\text{s}$), and P99 ($29.67\text{s}$), empirically validating the theoretical $\frac{T_{\text{poll}}}{2}$ mean expectation.
+- **Publication-Ready Visualization & Metrics Export:** Implemented dual-mode distribution charting: exports 300 DPI PNG via Matplotlib in CI runners, fallback zero-dependency vector SVG for restricted hosts, and structured machine-readable JSON metrics (`python-analysis/charts/latency_metrics.json`).
+- **Research Baseline Integration:** Documented formal latency models, percentiles, and comparison against container VMI benchmarks (arxiv:2509.16030) in `docs/RESEARCH_BENCHMARKS.md`.
 
 ---
 

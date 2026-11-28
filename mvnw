@@ -27,13 +27,37 @@ BASE_NAME="$(echo "$ZIP_NAME" | sed 's/-bin\.zip$//')"
 M2_WRAPPER_DIR="$HOME/.m2/wrapper/dists/$BASE_NAME"
 MVN_CMD="$M2_WRAPPER_DIR/$BASE_NAME/bin/mvn"
 
-if [ ! -x "$MVN_CMD" ]; then
-    echo "[Maven Wrapper] Downloading $DIST_URL ..."
-    mkdir -p "$M2_WRAPPER_DIR"
-    curl -fsSL "$DIST_URL" -o "$M2_WRAPPER_DIR/$ZIP_NAME"
+# 1. If Maven is already downloaded and executable in wrapper cache, execute it
+if [ -x "$MVN_CMD" ]; then
+    exec "$MVN_CMD" "$@"
+fi
+
+# 2. If system Maven is available in PATH, prefer it to prevent HTTP 429 rate limits on CI/shared IPs
+if command -v mvn >/dev/null 2>&1; then
+    exec mvn "$@"
+fi
+
+# 3. Fallback: Download Maven Wrapper with mirror redundancy and retry
+mkdir -p "$M2_WRAPPER_DIR"
+MIRRORS="$DIST_URL https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/$ZIP_NAME https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/$ZIP_NAME"
+
+DOWNLOAD_SUCCESS=0
+for URL in $MIRRORS; do
+    echo "[Maven Wrapper] Attempting download from $URL ..."
+    if curl --retry 3 --retry-delay 2 -fsSL "$URL" -o "$M2_WRAPPER_DIR/$ZIP_NAME" 2>/dev/null; then
+        DOWNLOAD_SUCCESS=1
+        break
+    else
+        echo "[Maven Wrapper] Download failed or rate-limited from $URL, trying next mirror..."
+    fi
+done
+
+if [ "$DOWNLOAD_SUCCESS" -eq 1 ] && [ -f "$M2_WRAPPER_DIR/$ZIP_NAME" ]; then
     unzip -q -o "$M2_WRAPPER_DIR/$ZIP_NAME" -d "$M2_WRAPPER_DIR"
     rm -f "$M2_WRAPPER_DIR/$ZIP_NAME"
     chmod +x "$MVN_CMD"
+    exec "$MVN_CMD" "$@"
 fi
 
-exec "$MVN_CMD" "$@"
+echo "[Maven Wrapper] Error: Unable to download Maven from any mirror and system 'mvn' not found." >&2
+exit 1
