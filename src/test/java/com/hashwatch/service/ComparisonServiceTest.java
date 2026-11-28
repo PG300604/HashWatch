@@ -337,4 +337,45 @@ class ComparisonServiceTest {
         assertEquals(FileStatus.VERIFIED, file1.getStatus());
         assertEquals(FileStatus.MISSING, file2.getStatus());
     }
+
+    @Test
+    @DisplayName("verifyFile should transition active file without baseline to UNTRACKED without alerts")
+    void shouldMarkUntrackedWhenNoBaselineExists() {
+        Path testFile = tempWatchDir.resolve("untracked.conf");
+        WatchedFile watchedFile = new WatchedFile(testFile.toString(), 0L, null, FileStatus.VERIFIED);
+        when(baselineEntryRepository.findByWatchedFileAndCurrentTrue(watchedFile)).thenReturn(Optional.empty());
+
+        comparisonService.verifyFile(watchedFile);
+
+        assertEquals(FileStatus.UNTRACKED, watchedFile.getStatus());
+        verify(watchedFileRepository, times(1)).save(watchedFile);
+        verify(alertEventRepository, never()).save(any(AlertEvent.class));
+    }
+
+    @Test
+    @DisplayName("S6-T3: verifyFile should flag MISSING gracefully if watched path is replaced by a directory")
+    void shouldHandleDirectoryReplacementGracefullyDuringVerify() throws Exception {
+        Path replacedAsDir = tempWatchDir.resolve("replaced_target");
+        Files.createDirectories(replacedAsDir);
+
+        WatchedFile watchedFile = new WatchedFile(replacedAsDir.toString(), 128L, null, FileStatus.VERIFIED);
+        BaselineEntry baseline = new BaselineEntry(watchedFile, "dummyHash", "dummySig", signingService.getKeyFingerprint());
+        when(baselineEntryRepository.findByWatchedFileAndCurrentTrue(watchedFile)).thenReturn(Optional.of(baseline));
+
+        assertDoesNotThrow(() -> comparisonService.verifyFile(watchedFile));
+        assertEquals(FileStatus.MISSING, watchedFile.getStatus());
+        verify(alertEventRepository, times(1)).save(any(AlertEvent.class));
+    }
+
+    @Test
+    @DisplayName("buildCanonicalPayload should reject null path and normalize forward slashes consistently")
+    void shouldRejectNullPathAndNormalizePayload() {
+        assertThrows(IllegalArgumentException.class, () -> comparisonService.buildCanonicalPayload(null, "abc", 10L));
+
+        String p1 = comparisonService.buildCanonicalPayload("watched_files\\sub\\..\\sample.conf", "abc123", 42L);
+        String p2 = comparisonService.buildCanonicalPayload("watched_files/sample.conf", "abc123", 42L);
+        assertEquals(p1, p2);
+        assertTrue(p1.startsWith("HashWatch:v1:"));
+        assertTrue(p1.endsWith(":abc123:42"));
+    }
 }

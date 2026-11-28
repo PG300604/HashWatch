@@ -347,4 +347,109 @@ class TamperDetectionIntegrationTest {
         assertEquals(FileStatus.VERIFIED, refreshed.getStatus());
         assertEquals(0, alertEventRepository.count());
     }
+
+    @Test
+    @DisplayName("S6-T3.1: Key rotation continuity -> Historical baselines remain VERIFIED via archived Ed25519 keys")
+    void testKeyRotationPreservesHistoricalBaselineVerification() throws Exception {
+        Path filePath = tempDir.resolve("rotated_key_target.conf");
+        Files.writeString(filePath, "tls.mode=strict\nkey.pinning=enabled\n");
+
+        WatchedFile watchedFile = new WatchedFile(
+                filePath.toAbsolutePath().toString(),
+                Files.size(filePath),
+                LocalDateTime.now(),
+                FileStatus.UNTRACKED
+        );
+        watchedFile = watchedFileRepository.save(watchedFile);
+        BaselineEntry baseline = comparisonService.establishBaseline(watchedFile);
+        String oldFingerprint = baseline.getPublicKeyId();
+
+        try {
+            String newFingerprint = signingService.rotateKeys(true);
+            assertNotEquals(oldFingerprint, newFingerprint);
+
+            comparisonService.runVerificationScan();
+
+            WatchedFile refreshed = watchedFileRepository.findById(watchedFile.getId()).orElseThrow();
+            assertEquals(FileStatus.VERIFIED, refreshed.getStatus(),
+                    "Existing baselines signed by archived keys must remain VERIFIED after key rotation");
+            assertEquals(0, alertEventRepository.count());
+        } finally {
+            // Ensure active keypair remains usable after test cleanup
+            signingService.ensureKeysLoaded();
+        }
+    }
+
+    @Test
+    @DisplayName("S6-T3.2: Triple-Lock size invariant -> Mutating DB fileSize invalidates signature (SIGNATURE_INVALID)")
+    void testTripleLockFileSizeTamperRejection() throws IOException, GeneralSecurityException {
+        Path filePath = tempDir.resolve("size_invariant.bin");
+        Files.writeString(filePath, "immutable-payload-v1");
+
+        WatchedFile watchedFile = new WatchedFile(
+                filePath.toAbsolutePath().toString(),
+                Files.size(filePath),
+                LocalDateTime.now(),
+                FileStatus.UNTRACKED
+        );
+        watchedFile = watchedFileRepository.save(watchedFile);
+        comparisonService.establishBaseline(watchedFile);
+
+        // Attacker mutates recorded fileSize in DB while leaving SHA-256 hash and signature untouched
+        watchedFile.setFileSize(watchedFile.getFileSize() + 1024L);
+        watchedFileRepository.save(watchedFile);
+
+        comparisonService.verifyFile(watchedFile);
+
+        WatchedFile refreshed = watchedFileRepository.findById(watchedFile.getId()).orElseThrow();
+        assertEquals(FileStatus.SIGNATURE_INVALID, refreshed.getStatus());
+        List<AlertEvent> alerts = alertEventRepository.findByResolvedFalseOrderByDetectedAtDesc();
+        assertEquals(1, alerts.size());
+        assertEquals(EventType.SIGNATURE_INVALID, alerts.get(0).getEventType());
+        assertEquals(AlertSeverity.CRITICAL, alerts.get(0).getSeverity());
+    }
+
+    @Test
+    @DisplayName("S6-T3.3: Mixed-state batch scan + missing-file restoration recovery lifecycle")
+    void testMultiFileMixedStateBatchScanAndRecoveryLifecycle() throws IOException, GeneralSecurityException {
+        Path intactPath = tempDir.resolve("intact.yml");
+        Path tamperedPath = tempDir.resolve("tampered.yml");
+        Path missingPath = tempDir.resolve("ephemeral.yml");
+        Path poisonedPath = tempDir.resolve("poisoned.yml");
+
+        Files.writeString(intactPath, "status: ok\n");
+        Files.writeString(tamperedPath, "role: user\n");
+        Files.writeString(missingPath, "secret: token123\n");
+        Files.writeString(poisonedPath, "audit: true\n");
+
+        WatchedFile intact = watchedFileRepository.save(new WatchedFile(intactPath.toAbsolutePath().toString(), Files.size(intactPath), LocalDateTime.now(), FileStatus.UNTRACKED));
+        WatchedFile tampered = watchedFileRepository.save(new WatchedFile(tamperedPath.toAbsolutePath().toString(), Files.size(tamperedPath), LocalDateTime.now(), FileStatus.UNTRACKED));
+        WatchedFile missing = watchedFileRepository.save(new WatchedFile(missingPath.toAbsolutePath().toString(), Files.size(missingPath), LocalDateTime.now(), FileStatus.UNTRACKED));
+        WatchedFile poisoned = watchedFileRepository.save(new WatchedFile(poisonedPath.toAbsolutePath().toString(), Files.size(poisonedPath), LocalDateTime.now(), FileStatus.UNTRACKED));
+
+        comparisonService.establishBaseline(intact);
+        comparisonService.establishBaseline(tampered);
+        comparisonService.establishBaseline(missing);
+        comparisonService.establishBaseline(poisoned);
+
+        // Inject 3 distinct failure modes simultaneously
+        Files.writeString(tamperedPath, "role: root\n");
+        Files.delete(missingPath);
+        BaselineEntry poisonedBaseline = baselineEntryRepository.findByWatchedFileAndCurrentTrue(poisoned).orElseThrow();
+        poisonedBaseline.setSignature("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
+        baselineEntryRepository.save(poisonedBaseline);
+
+        comparisonService.runVerificationScan();
+
+        assertEquals(FileStatus.VERIFIED, watchedFileRepository.findById(intact.getId()).orElseThrow().getStatus());
+        assertEquals(FileStatus.TAMPERED, watchedFileRepository.findById(tampered.getId()).orElseThrow().getStatus());
+        assertEquals(FileStatus.MISSING, watchedFileRepository.findById(missing.getId()).orElseThrow().getStatus());
+        assertEquals(FileStatus.SIGNATURE_INVALID, watchedFileRepository.findById(poisoned.getId()).orElseThrow().getStatus());
+        assertEquals(3, alertEventRepository.countByResolvedFalse());
+
+        // Restore missing file & re-baseline -> returns cleanly to VERIFIED
+        Files.writeString(missingPath, "secret: token123\n");
+        comparisonService.establishBaseline(missing);
+        assertEquals(FileStatus.VERIFIED, watchedFileRepository.findById(missing.getId()).orElseThrow().getStatus());
+    }
 }
