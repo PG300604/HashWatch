@@ -83,24 +83,26 @@ flowchart TD
 
     subgraph Sprint3["Sprint 3: REST API Layer"]
         S3R["✅ Riya: API (FileController & BaselineController)"]
-        S3P["Priyanshu: API & Backend (AlertController & manual scans)"]
-        S3S["Samarjeet: Cryptology (Detached signature validation)"]
+        S3P["✅ Priyanshu: API & Backend (AlertController & manual scans)"]
+        S3S["✅ Samarjeet: Cryptology (Key rotation, PEM/DER & detached verify)"]
     end
 
     subgraph Sprint4["Sprint 4: Web Dashboard UI"]
         S4R["✅ Riya: Frontend (Thymeleaf UI & alerts view)"]
-        S4S["Samarjeet: Frontend/Backend (DashboardViewController stats)"]
-        S4P["Priyanshu: DevOps (Local testing & profiles)"]
+        S4S["✅ Samarjeet: Frontend/Backend (DashboardViewController stats)"]
+        S4P["✅ Priyanshu: DevOps & UI (Obsidian SOC design system & profiles)"]
     end
 
     subgraph Sprint5["Sprint 5: Benchmarking & CI"]
-        S5P["Priyanshu: Analysis & DevOps (CI pipeline & overhead scripts)"]
-        S5S["Samarjeet: Analysis (Latency distributions & P95 metrics)"]
+        S5P["✅ Priyanshu: Analysis & DevOps (CI pipeline & overhead scripts)"]
+        S5S["✅ Samarjeet: Analysis (Stochastic latency & P95/P99 metrics)"]
         S5R["✅ Riya: Cryptology (Tamper injection integration tests)"]
     end
 
     subgraph Sprint6["Sprint 6: Final Verification & Defense"]
-        ALL["All Members: Academic comparisons, report synthesis & demo prep"]
+        S6R["✅ Riya: User Manual, Final Report & Defense Slides (SC-3, SC-4)"]
+        S6P["✅ Priyanshu: Benchmarks against Papers & System Hardening"]
+        S6S["✅ Samarjeet: Resilience & Corner-case hardening"]
     end
 
     Sprint1 --> Sprint2 --> Sprint3 --> Sprint4 --> Sprint5 --> Sprint6

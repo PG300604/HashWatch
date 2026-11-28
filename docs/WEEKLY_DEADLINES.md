@@ -52,5 +52,15 @@
 - [x] **S5-T3 (Samarjeet — Analysis):** Measure end-to-end detection latency distributions; compute mean, median, P95 metrics (`python-analysis/latency_analysis.py`).
 - [x] **S5-T4 (Riya & Priyanshu — Cryptology & API):** Implement end-to-end integration test suite verifying tamper detection, single-bit flip sensitivity, database signature invalidation, missing files, and authorized re-baselining (`TamperDetectionIntegrationTest.java`, 7/7 passing).
 
+---
+
+## Sprint 6 Task Status Checklist
+
+- [x] **S6-T1 (Priyanshu — Analysis & DevOps):** Collate benchmark figures against published research papers (snaproot, Ed25519 reference, VMI container FIM).
+- [x] **S6-T2 (Riya — Frontend & UI):** Author Operator User Manual and administration runbook (`docs/USER_MANUAL.md`).
+- [x] **SC-3 (Priyanshu, Riya, Samarjeet — Academic Report):** Final Academic Project Report for Asansol Engineering College / MAKAUT CSBS Department (`docs/FINAL_ACADEMIC_REPORT.md`).
+- [x] **SC-4 (Priyanshu, Riya, Samarjeet — Defense Deck):** Project Defense & Viva Voce Presentation Deck with Speaker Notes and Examiner Q&A Cheat Sheet (`docs/PROJECT_DEFENSE_PRESENTATION.md`).
+- [x] **S6-T3 (Samarjeet — Backend & Cryptology):** Corner-case hardening: missing files, locked files, directory-path guards, and unreadable permissions.
+
 > [!IMPORTANT]
 > All Pull Requests for the sprint must be submitted by **Saturday 18:00 IST** to allow review and resolution before the Sunday cutoff.
