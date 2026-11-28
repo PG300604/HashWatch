@@ -1,5 +1,6 @@
 package com.hashwatch.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -25,6 +26,7 @@ public class AlertEvent {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "watched_file_id", foreignKey = @ForeignKey(name = "fk_alert_watched_file"))
     @OnDelete(action = OnDeleteAction.SET_NULL)

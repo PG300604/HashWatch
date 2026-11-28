@@ -215,7 +215,7 @@ public class FileController {
     private RegistrationOutcome registerOrReactivateSingleFile(String rawPathStr)
             throws IOException, GeneralSecurityException {
 
-        Path rawPath = Paths.get(rawPathStr);
+        Path rawPath = Paths.get(rawPathStr.replace('\\', '/'));
         Path canonicalPath = rawPath.toAbsolutePath().normalize();
         String normalizedPathStr = canonicalPath.toString().replace('\\', '/');
 

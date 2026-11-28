@@ -79,7 +79,8 @@ public class ComparisonService {
         if (filePath == null) {
             throw new IllegalArgumentException("File path cannot be null when building canonical payload");
         }
-        String normalizedPath = Paths.get(filePath).toAbsolutePath().normalize().toString().replace('\\', '/');
+        String sanitizedPath = filePath.replace('\\', '/');
+        String normalizedPath = Paths.get(sanitizedPath).toAbsolutePath().normalize().toString().replace('\\', '/');
         return String.format("HashWatch:v1:%s:%s:%d", normalizedPath, sha256Hash, fileSize);
     }
 
